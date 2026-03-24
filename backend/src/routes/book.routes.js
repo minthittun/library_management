@@ -14,5 +14,7 @@ router.delete('/books/:id', authenticateToken, bookController.deleteBook);
 router.post('/book-copies', authenticateToken, bookController.createBookCopy);
 router.get('/book-copies', authenticateToken, bookController.getBookCopies);
 router.get('/available-copies', authenticateToken, bookController.getAvailableCopies);
+router.put('/book-copies/bulk', authenticateToken, bookController.bulkUpdateBookCopies);
+router.delete('/book-copies/bulk', authenticateToken, bookController.bulkDeleteBookCopies);
 
 export default router;

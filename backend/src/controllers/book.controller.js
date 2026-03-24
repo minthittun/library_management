@@ -52,9 +52,10 @@ export const deleteBook = async (req, res, next) => {
 
 export const createBookCopy = async (req, res, next) => {
   try {
-    const copy = await bookCopyService.createBookCopy(req.body);
-    const populatedCopy = await BookCopy.findById(copy._id).populate('book');
-    res.status(201).json(populatedCopy);
+    const result = await bookCopyService.createBookCopy(req.body);
+    const ids = Array.isArray(result) ? result.map(r => r._id) : [result._id];
+    const populatedCopies = await BookCopy.find({ _id: { $in: ids } }).populate('book');
+    res.status(201).json(Array.isArray(result) ? populatedCopies : populatedCopies[0]);
   } catch (error) {
     next(error);
   }
@@ -81,6 +82,35 @@ export const getAvailableCopies = async (req, res, next) => {
       copies = await bookCopyService.getAllAvailableCopies();
     }
     res.json(copies);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkUpdateBookCopies = async (req, res, next) => {
+  try {
+    const { ids, ...updates } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'IDs array is required' });
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'At least one field to update is required' });
+    }
+    await bookCopyService.bulkUpdateBookCopies(ids, updates);
+    res.json({ message: `${ids.length} copies updated successfully` });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkDeleteBookCopies = async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'IDs array is required' });
+    }
+    await bookCopyService.deleteBulkBookCopies(ids);
+    res.json({ message: `${ids.length} copies deleted successfully` });
   } catch (error) {
     next(error);
   }

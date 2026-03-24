@@ -90,7 +90,7 @@ function Login() {
             className={`w-full mt-6 px-4 py-2 rounded-md text-sm font-medium ${
               darkMode
                 ? "bg-blue-600 hover:bg-blue-500 text-white"
-                : "bg-green-600 hover:bg-green-500 text-white"
+                : "bg-blue-600 hover:bg-blue-500 text-white"
             } disabled:opacity-50`}
           >
             {loading ? "Signing in..." : "Sign in"}

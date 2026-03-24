@@ -41,6 +41,8 @@ export const bookAPI = {
   getBookCopies: (params) => api.get("/book-copies", { params }),
   createBookCopy: (data) => api.post("/book-copies", data),
   getAvailableCopies: (params) => api.get("/available-copies", { params }),
+  bulkUpdateBookCopies: (ids, updates) => api.put("/book-copies/bulk", { ids, ...updates }),
+  bulkDeleteBookCopies: (ids) => api.delete("/book-copies/bulk", { data: { ids } }),
 };
 
 export const memberAPI = {
@@ -69,6 +71,10 @@ export const paymentAPI = {
   getPayments: (params) => api.get("/payments", { params }),
   createPayment: (data) => api.post("/payments", data),
   getMemberPayments: (memberId) => api.get(`/member/${memberId}/payments`),
+};
+
+export const dashboardAPI = {
+  getStats: () => api.get("/dashboard"),
 };
 
 export default api;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
+import useModalStore from "../store/useModalStore";
 import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
@@ -8,6 +9,7 @@ function Return() {
   const { borrowRecords, borrowMeta, fetchBorrowRecords, returnBook } =
     useStore();
   const darkMode = useUIStore((state) => state.darkMode);
+  const showAlert = useModalStore((state) => state.showAlert);
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -39,8 +41,9 @@ function Return() {
         search: debouncedSearch,
         status: "borrowed",
       });
+      showAlert("Success", "Book returned successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error returning book");
+      showAlert("Error", error.response?.data?.message || "Error returning book", "error");
     }
   };
 

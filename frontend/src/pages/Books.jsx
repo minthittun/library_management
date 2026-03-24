@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
+import useModalStore from "../store/useModalStore";
 import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
@@ -8,6 +9,7 @@ function Books() {
   const { books, booksMeta, fetchBooks, addBook } = useStore();
 
   const darkMode = useUIStore((state) => state.darkMode);
+  const showAlert = useModalStore((state) => state.showAlert);
 
   const [showBookModal, setShowBookModal] = useState(false);
   const [search, setSearch] = useState("");
@@ -52,8 +54,9 @@ function Books() {
       setShowBookModal(false);
       setPage(1);
       fetchBooks({ page: 1, limit, search: debouncedSearch });
+      showAlert("Success", "Book added successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error adding book");
+      showAlert("Error", error.response?.data?.message || "Error adding book", "error");
     }
   };
 
@@ -66,7 +69,7 @@ function Books() {
   const buttonPrimary = `px-4 py-2 rounded-md text-sm font-medium ${
     darkMode
       ? "bg-blue-600 hover:bg-blue-500 text-white"
-      : "bg-green-600 hover:bg-green-500 text-white"
+      : "bg-blue-600 hover:bg-blue-500 text-white"
   }`;
   const buttonSecondary = `px-4 py-2 rounded-md text-sm font-medium border ${
     darkMode
@@ -196,21 +199,43 @@ function Books() {
               Add New Book
             </h2>
             <form onSubmit={handleBookSubmit} className="space-y-3">
-              {["title", "author", "isbn", "category", "publisher"].map(
-                (field) => (
-                  <input
-                    key={field}
-                    type="text"
-                    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                    className={inputStyle}
-                    value={bookForm[field]}
-                    onChange={(e) =>
-                      setBookForm({ ...bookForm, [field]: e.target.value })
-                    }
-                    required
-                  />
-                ),
-              )}
+              {["title", "author", "isbn", "publisher"].map((field) => (
+                <input
+                  key={field}
+                  type="text"
+                  placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                  className={inputStyle}
+                  value={bookForm[field]}
+                  onChange={(e) =>
+                    setBookForm({ ...bookForm, [field]: e.target.value })
+                  }
+                  required
+                />
+              ))}
+              <select
+                className={inputStyle}
+                value={bookForm.category}
+                onChange={(e) =>
+                  setBookForm({ ...bookForm, category: e.target.value })
+                }
+                required
+              >
+                <option value="">Select Category</option>
+                <option value="Fiction">Fiction</option>
+                <option value="Non-Fiction">Non-Fiction</option>
+                <option value="Science">Science</option>
+                <option value="Technology">Technology</option>
+                <option value="History">History</option>
+                <option value="Biography">Biography</option>
+                <option value="Romance">Romance</option>
+                <option value="Mystery">Mystery</option>
+                <option value="Fantasy">Fantasy</option>
+                <option value="Business">Business</option>
+                <option value="Self-Help">Self-Help</option>
+                <option value="Children">Children</option>
+                <option value="Reference">Reference</option>
+                <option value="Textbook">Textbook</option>
+              </select>
               <input
                 type="number"
                 placeholder="Published Year"

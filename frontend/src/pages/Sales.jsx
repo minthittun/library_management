@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import useStore from "../store/useStore";
 import useAuthStore from "../store/useAuthStore";
 import useUIStore from "../store/useUIStore";
+import useModalStore from "../store/useModalStore";
 import useDebounce from "../hooks/useDebounce";
 
 function Sales() {
   const { fetchBookCopies, checkoutSale } = useStore();
   const user = useAuthStore((state) => state.user);
   const darkMode = useUIStore((state) => state.darkMode);
+  const showAlert = useModalStore((state) => state.showAlert);
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -15,8 +17,8 @@ function Sales() {
   const [cart, setCart] = useState([]);
   const [discountPct, setDiscountPct] = useState("0");
   const [taxPct, setTaxPct] = useState("0");
+  const [payAmount, setPayAmount] = useState("");
 
-  // Styles
   const containerStyle = darkMode ? "text-white" : "text-gray-900";
   const tableBg = darkMode ? "#161b22" : "#ffffff";
   const tableBorder = darkMode ? "#30363d" : "#d0d7de";
@@ -30,12 +32,22 @@ function Sales() {
   const buttonPrimary = `px-4 py-2 rounded-md text-sm font-medium ${
     darkMode
       ? "bg-blue-600 hover:bg-blue-500 text-white"
-      : "bg-green-600 hover:bg-green-500 text-white"
+      : "bg-blue-600 hover:bg-blue-500 text-white"
   }`;
   const buttonSecondary = `px-4 py-2 rounded-md text-sm font-medium border ${
     darkMode
       ? "border-gray-600 hover:bg-gray-800 text-gray-300"
       : "border-gray-300 hover:bg-gray-100 text-gray-700"
+  }`;
+  const buttonDanger = `px-4 py-2 rounded-md text-sm font-medium ${
+    darkMode
+      ? "bg-red-600 hover:bg-red-500 text-white"
+      : "bg-red-600 hover:bg-red-500 text-white"
+  }`;
+  const buttonSuccess = `px-4 py-2 rounded-md text-sm font-medium ${
+    darkMode
+      ? "bg-green-600 hover:bg-green-500 text-white"
+      : "bg-green-600 hover:bg-green-500 text-white"
   }`;
 
   useEffect(() => {
@@ -47,7 +59,7 @@ function Sales() {
       try {
         const data = await fetchBookCopies({
           page: 1,
-          limit: 10,
+          limit: 50,
           search: debouncedSearch,
           type: "sell",
           status: "available",
@@ -62,73 +74,69 @@ function Sales() {
 
   const addToCart = (copy) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.bookId === copy.book?._id);
+      const existing = prev.find((item) => item.copyId === copy._id);
       if (existing) {
-        return prev.map((item) =>
-          item.bookId === copy.book?._id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        );
+        return prev;
       }
       return [
         ...prev,
         {
+          copyId: copy._id,
           bookId: copy.book?._id,
           title: copy.book?.title,
+          barcode: copy.barcode,
           unitPrice: copy.price || 0,
-          quantity: 1,
         },
       ];
     });
+    setSearch("");
+    setResults([]);
   };
 
-  const updateQuantity = (bookId, quantity) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.bookId === bookId
-          ? { ...item, quantity: Math.max(quantity, 1) }
-          : item,
-      ),
-    );
-  };
-
-  const removeItem = (bookId) => {
-    setCart((prev) => prev.filter((item) => item.bookId !== bookId));
+  const removeItem = (copyId) => {
+    setCart((prev) => prev.filter((item) => item.copyId !== copyId));
   };
 
   const subtotal = useMemo(
-    () =>
-      cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+    () => cart.reduce((sum, item) => sum + item.unitPrice, 0),
     [cart],
   );
   const discountAmount = (subtotal * (Number(discountPct) || 0)) / 100;
   const taxable = subtotal - discountAmount;
   const taxAmount = (taxable * (Number(taxPct) || 0)) / 100;
   const total = taxable + taxAmount;
+  const change = Math.max(0, (Number(payAmount) || 0) - total);
 
   const handleCheckout = async () => {
     if (!cart.length) {
-      alert("Cart is empty");
+      showAlert("Cart Empty", "Please add items to cart.", "warning");
+      return;
+    }
+    if (!payAmount || Number(payAmount) < total) {
+      showAlert("Invalid Payment", "Pay amount must be greater than or equal to total.", "warning");
       return;
     }
     try {
       await checkoutSale({
         items: cart.map((item) => ({
           bookId: item.bookId,
-          quantity: item.quantity,
+          copyId: item.copyId,
+          quantity: 1,
         })),
         soldBy: user?.name || "Unknown",
         discountPct: Number(discountPct) || 0,
         taxPct: Number(taxPct) || 0,
+        payAmount: Number(payAmount),
       });
       setCart([]);
       setSearch("");
       setResults([]);
       setDiscountPct("0");
       setTaxPct("0");
-      alert("Sale completed");
+      setPayAmount("");
+      showAlert("Success", "Sale completed successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error processing sale");
+      showAlert("Error", error.response?.data?.message || "Error processing sale", "error");
     }
   };
 
@@ -207,7 +215,7 @@ function Sales() {
                     <td className={tdClass}>
                       <button
                         type="button"
-                        className={buttonSecondary}
+                        className={buttonSuccess}
                         onClick={() => addToCart(copy)}
                       >
                         Add
@@ -218,7 +226,7 @@ function Sales() {
                 {results.length === 0 && (
                   <tr>
                     <td className={tdClass} colSpan={4}>
-                      Scan a barcode or search to add items.
+                      Scan barcode or search to add items.
                     </td>
                   </tr>
                 )}
@@ -233,30 +241,22 @@ function Sales() {
             style={{ backgroundColor: tableBg, borderColor: tableBorder }}
           >
             <div className="p-4 border-b" style={{ borderColor: tableBorder }}>
-              <div className="text-lg font-semibold">Cart</div>
+              <div className="text-lg font-semibold">Cart ({cart.length})</div>
             </div>
             <div className="p-4 space-y-3">
               {cart.map((item) => (
-                <div key={item.bookId} className="flex items-center gap-2">
+                <div key={item.copyId} className="flex items-center gap-2">
                   <div className="flex-1">
                     <div className="text-sm font-medium">{item.title}</div>
+                    <div className="text-xs text-gray-500">{item.barcode}</div>
                     <div className="text-xs text-gray-500">
                       MMK {item.unitPrice}
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    className={inputStyle}
-                    value={item.quantity}
-                    min={1}
-                    onChange={(e) =>
-                      updateQuantity(item.bookId, parseInt(e.target.value, 10))
-                    }
-                  />
                   <button
                     type="button"
-                    className={buttonSecondary}
-                    onClick={() => removeItem(item.bookId)}
+                    className={buttonDanger}
+                    onClick={() => removeItem(item.copyId)}
                   >
                     Remove
                   </button>
@@ -270,20 +270,24 @@ function Sales() {
             </div>
             <div className="p-4 border-t" style={{ borderColor: tableBorder }}>
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <input
-                  type="number"
-                  className={inputStyle}
-                  placeholder="Discount %"
-                  value={discountPct}
-                  onChange={(e) => setDiscountPct(e.target.value)}
-                />
-                <input
-                  type="number"
-                  className={inputStyle}
-                  placeholder="Tax %"
-                  value={taxPct}
-                  onChange={(e) => setTaxPct(e.target.value)}
-                />
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Discount %</label>
+                  <input
+                    type="number"
+                    className={inputStyle}
+                    value={discountPct}
+                    onChange={(e) => setDiscountPct(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Tax %</label>
+                  <input
+                    type="number"
+                    className={inputStyle}
+                    value={taxPct}
+                    onChange={(e) => setTaxPct(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="text-sm text-gray-500 space-y-1 mb-3">
                 <div>Subtotal: MMK {subtotal.toFixed(2)}</div>
@@ -293,15 +297,26 @@ function Sales() {
                   Total: MMK {total.toFixed(2)}
                 </div>
               </div>
-              <div
-                className={`px-3 py-2 rounded-md border mb-3 ${
-                  darkMode
-                    ? "bg-[#0d1117] border-gray-600"
-                    : "bg-gray-50 border-gray-300"
-                }`}
-              >
-                <span className="text-sm text-gray-500">Payment: </span>
-                <span className="text-sm font-medium">Cash</span>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Pay Amount</label>
+                  <input
+                    type="number"
+                    className={inputStyle}
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Change</label>
+                  <div className={`px-3 py-2 rounded-md border ${
+                    darkMode
+                      ? "bg-[#0d1117] border-gray-600 text-white"
+                      : "bg-gray-50 border-gray-300 text-gray-900"
+                  }`}>
+                    MMK {change.toFixed(2)}
+                  </div>
+                </div>
               </div>
               <button
                 type="button"

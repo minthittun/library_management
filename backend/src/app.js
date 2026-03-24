@@ -6,6 +6,7 @@ import borrowRoutes from './routes/borrow.routes.js';
 import saleRoutes from './routes/sale.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
@@ -20,6 +21,7 @@ app.use('/api', memberRoutes);
 app.use('/api', borrowRoutes);
 app.use('/api', saleRoutes);
 app.use('/api', paymentRoutes);
+app.use('/api', dashboardRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

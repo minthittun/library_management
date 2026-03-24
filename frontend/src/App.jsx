@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import ModalProvider from "./components/ModalProvider";
 import Dashboard from "./pages/Dashboard";
 import Books from "./pages/Books";
 import BookCopies from "./pages/BookCopies";
 import Members from "./pages/Members";
 import Issue from "./pages/Issue";
 import Return from "./pages/Return";
+import BorrowReport from "./pages/BorrowReport";
 import Sales from "./pages/Sales";
 import SalesReport from "./pages/SalesReport";
 import Payments from "./pages/Payments";
@@ -27,6 +29,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ModalProvider />
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -52,6 +55,7 @@ function App() {
                       <Route path="/members" element={<Members />} />
                       <Route path="/issue" element={<Issue />} />
                       <Route path="/return" element={<Return />} />
+                      <Route path="/borrow/report" element={<BorrowReport />} />
                       <Route path="/sales" element={<Sales />} />
                       <Route path="/sales/report" element={<SalesReport />} />
                       <Route path="/payments" element={<Payments />} />

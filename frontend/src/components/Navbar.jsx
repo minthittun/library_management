@@ -17,7 +17,7 @@ function Navbar({ onLogout, user }) {
     <>
       <button
         onClick={toggleSidebar}
-        className={`fixed top-3 z-20 p-1.5 rounded-md transition-colors ${
+        className={`fixed top-3 z-20 p-2 rounded-md transition-colors ${
           darkMode
             ? "bg-gray-700 hover:bg-gray-600 text-gray-300 left-4"
             : "bg-gray-100 hover:bg-gray-200 text-gray-700 left-4"
@@ -48,7 +48,7 @@ function Navbar({ onLogout, user }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
+              d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
             />
           </svg>
         )}

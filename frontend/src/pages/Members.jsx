@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
+import useModalStore from "../store/useModalStore";
 import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
@@ -8,6 +9,7 @@ function Members() {
   const { members, membersMeta, fetchMembers, addMember, createPayment } =
     useStore();
   const darkMode = useUIStore((state) => state.darkMode);
+  const showAlert = useModalStore((state) => state.showAlert);
 
   const [showModal, setShowModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -40,8 +42,9 @@ function Members() {
       setShowModal(false);
       setPage(1);
       fetchMembers({ page: 1, limit, search: debouncedSearch });
+      showAlert("Success", "Member added successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error adding member");
+      showAlert("Error", error.response?.data?.message || "Error adding member", "error");
     }
   };
 
@@ -61,8 +64,9 @@ function Members() {
       setShowPaymentModal(false);
       setPage(1);
       fetchMembers({ page: 1, limit, search: debouncedSearch });
+      showAlert("Success", "Payment processed successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error processing payment");
+      showAlert("Error", error.response?.data?.message || "Error processing payment", "error");
     }
   };
 
@@ -97,7 +101,7 @@ function Members() {
   const buttonPrimary = `px-4 py-2 rounded-md text-sm font-medium ${
     darkMode
       ? "bg-blue-600 hover:bg-blue-500 text-white"
-      : "bg-green-600 hover:bg-green-500 text-white"
+      : "bg-blue-600 hover:bg-blue-500 text-white"
   }`;
   const buttonSecondary = `px-4 py-2 rounded-md text-sm font-medium border ${
     darkMode
@@ -192,8 +196,8 @@ function Members() {
                           : "bg-yellow-100 text-yellow-700"
                         : member.status === "active"
                         ? darkMode
-                          ? "bg-green-900/50 text-green-400"
-                          : "bg-green-100 text-green-700"
+                          ? "bg-blue-900/50 text-blue-400"
+                          : "bg-blue-100 text-blue-700"
                         : darkMode
                           ? "bg-red-900/50 text-red-400"
                           : "bg-red-100 text-red-700"

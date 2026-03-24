@@ -4,32 +4,34 @@ import useUIStore from "../store/useUIStore";
 import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
-function SalesReport() {
-  const { sales, salesMeta, fetchSales } = useStore();
+function BorrowReport() {
+  const { borrowRecords, borrowMeta, fetchBorrowRecords } = useStore();
   const darkMode = useUIStore((state) => state.darkMode);
 
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
-    fetchSales({
+    fetchBorrowRecords({
       page,
       limit,
       search: debouncedSearch,
       from,
       to,
+      status: status || undefined,
     });
-  }, [page, limit, debouncedSearch, from, to]);
+  }, [page, limit, debouncedSearch, from, to, status]);
 
   useEffect(() => {
-    if (salesMeta.totalPages > 0 && page > salesMeta.totalPages) {
-      setPage(salesMeta.totalPages);
+    if (borrowMeta.totalPages > 0 && page > borrowMeta.totalPages) {
+      setPage(borrowMeta.totalPages);
     }
-  }, [salesMeta.totalPages, page]);
+  }, [borrowMeta.totalPages, page]);
 
   const formatDate = (date) =>
     date ? new Date(date).toLocaleDateString() : "N/A";
@@ -52,14 +54,14 @@ function SalesReport() {
           className="text-2xl font-semibold"
           style={{ color: darkMode ? "#ffffff" : "#111827" }}
         >
-          Sales Report
+          Borrow Report
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
         <input
           type="text"
-          placeholder="Search book or sold by"
+          placeholder="Search book, member..."
           className={inputStyle}
           value={search}
           onChange={(e) => {
@@ -85,6 +87,18 @@ function SalesReport() {
             setPage(1);
           }}
         />
+        <select
+          className={inputStyle}
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All Status</option>
+          <option value="borrowed">Borrowed</option>
+          <option value="returned">Returned</option>
+        </select>
       </div>
 
       <div
@@ -102,40 +116,56 @@ function SalesReport() {
             >
               <th className={`${thClass} first:rounded-tl-md`}>Book</th>
               <th className={thClass}>Barcode</th>
-              <th className={thClass}>Price</th>
-              <th className={thClass}>Pay Amount</th>
-              <th className={thClass}>Change</th>
-              <th className={thClass}>Sold Date</th>
-              <th className={`${thClass} last:rounded-tr-md`}>Sold By</th>
+              <th className={thClass}>Member</th>
+              <th className={thClass}>Issue Date</th>
+              <th className={thClass}>Due Date</th>
+              <th className={thClass}>Return Date</th>
+              <th className={thClass}>Status</th>
+              <th className={`${thClass} last:rounded-tr-md`}>Issued By</th>
             </tr>
           </thead>
           <tbody className="text-sm">
-            {sales?.map((sale, index) => (
+            {borrowRecords?.map((record, index) => (
               <tr
-                key={sale._id}
+                key={record._id}
                 className={`${
                   darkMode ? "border-gray-700" : "border-gray-200"
                 } border-b`}
               >
                 <td
                   className={`${tdClass} ${
-                    index === sales.length - 1 ? "rounded-bl-md" : ""
+                    index === borrowRecords.length - 1 ? "rounded-bl-md" : ""
                   }`}
                 >
-                  {sale.bookCopy?.book?.title || "N/A"}
+                  {record.bookCopy?.book?.title || "N/A"}
                 </td>
-                <td className={tdClass}>{sale.bookCopy?.barcode || "N/A"}</td>
-                <td className={tdClass}>MMK {sale.price?.toFixed(2)}</td>
-                <td className={tdClass}>MMK {sale.payAmount?.toFixed(2) || "0.00"}</td>
-                <td className={tdClass}>MMK {sale.change?.toFixed(2) || "0.00"}</td>
-                <td className={tdClass}>{formatDate(sale.soldDate)}</td>
-                <td className={tdClass}>{sale.soldBy}</td>
+                <td className={tdClass}>{record.bookCopy?.barcode || "N/A"}</td>
+                <td className={tdClass}>{record.member?.name || "N/A"}</td>
+                <td className={tdClass}>{formatDate(record.borrowDate)}</td>
+                <td className={tdClass}>{formatDate(record.dueDate)}</td>
+                <td className={tdClass}>{formatDate(record.returnDate)}</td>
+                <td className={tdClass}>
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      record.status === "borrowed"
+                        ? darkMode
+                          ? "bg-yellow-900/50 text-yellow-400"
+                          : "bg-yellow-100 text-yellow-700"
+                        : darkMode
+                        ? "bg-green-900/50 text-green-400"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {record.status}
+                  </span>
+                </td>
+                <td className={tdClass}>{record.issuedBy || "N/A"}</td>
               </tr>
             ))}
-            {sales?.length === 0 && (
+            {borrowRecords?.length === 0 && (
               <tr>
-                <td className={tdClass} colSpan={7}>
-                  No sales found.
+                <td className={tdClass} colSpan={8}>
+                  No borrow records found.
                 </td>
               </tr>
             )}
@@ -145,9 +175,9 @@ function SalesReport() {
 
       <Pagination
         page={page}
-        totalPages={salesMeta.totalPages}
-        total={salesMeta.total}
-        limit={salesMeta.limit}
+        totalPages={borrowMeta.totalPages}
+        total={borrowMeta.total}
+        limit={borrowMeta.limit}
         onPageChange={setPage}
         onLimitChange={(value) => {
           setLimit(value);
@@ -159,4 +189,4 @@ function SalesReport() {
   );
 }
 
-export default SalesReport;
+export default BorrowReport;

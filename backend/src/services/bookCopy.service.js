@@ -3,8 +3,30 @@ import { buildPaginatedResponse, normalizePagination } from '../utils/pagination
 import { buildSearchRegex } from '../utils/search.js';
 
 export const createBookCopy = async (copyData) => {
-  const copy = new BookCopy(copyData);
+  if (copyData.quantity && copyData.quantity > 1) {
+    const copies = [];
+    for (let i = 0; i < copyData.quantity; i++) {
+      copies.push({
+        book: copyData.book,
+        type: copyData.type,
+        barcode: generateBarcode(),
+        status: 'available',
+        price: copyData.price,
+      });
+    }
+    return await BookCopy.insertMany(copies);
+  }
+  const copy = new BookCopy({
+    ...copyData,
+    barcode: copyData.barcode || generateBarcode(),
+  });
   return await copy.save();
+};
+
+const generateBarcode = () => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `BK-${timestamp}-${random}`;
 };
 
 export const getAllBookCopies = async (params = {}) => {
@@ -90,4 +112,16 @@ export const getAllAvailableCopies = async () => {
 
 export const updateBookCopyStatus = async (id, status) => {
   return await BookCopy.findByIdAndUpdate(id, { status }, { new: true });
+};
+
+export const bulkUpdateBookCopies = async (ids, updateData) => {
+  return await BookCopy.updateMany(
+    { _id: { $in: ids } },
+    { $set: updateData },
+    { new: true }
+  );
+};
+
+export const deleteBulkBookCopies = async (ids) => {
+  return await BookCopy.deleteMany({ _id: { $in: ids } });
 };

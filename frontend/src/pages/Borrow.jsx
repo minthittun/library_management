@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
+import useModalStore from "../store/useModalStore";
 import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
@@ -18,6 +19,7 @@ function Borrow() {
   } = useStore();
 
   const darkMode = useUIStore((state) => state.darkMode);
+  const showAlert = useModalStore((state) => state.showAlert);
 
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -68,8 +70,9 @@ function Borrow() {
       fetchBorrowOptions({ page: 1, limit: 1000, status: "borrowed" }).then(
         setBorrowOptions,
       );
+      showAlert("Success", "Book borrowed successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error borrowing book");
+      showAlert("Error", error.response?.data?.message || "Error borrowing book", "error");
     }
   };
 
@@ -86,8 +89,9 @@ function Borrow() {
       fetchBorrowOptions({ page: 1, limit: 1000, status: "borrowed" }).then(
         setBorrowOptions,
       );
+      showAlert("Success", "Book returned successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error returning book");
+      showAlert("Error", error.response?.data?.message || "Error returning book", "error");
     }
   };
 
@@ -108,7 +112,7 @@ function Borrow() {
   const buttonPrimary = `px-4 py-2 rounded-md text-sm font-medium ${
     darkMode
       ? "bg-blue-600 hover:bg-blue-500 text-white"
-      : "bg-green-600 hover:bg-green-500 text-white"
+      : "bg-blue-600 hover:bg-blue-500 text-white"
   }`;
   const buttonSecondary = `px-4 py-2 rounded-md text-sm font-medium border ${
     darkMode

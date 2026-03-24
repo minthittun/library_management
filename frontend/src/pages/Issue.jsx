@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
+import useModalStore from "../store/useModalStore";
 import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
@@ -15,6 +16,7 @@ function Issue() {
     borrowBook,
   } = useStore();
   const darkMode = useUIStore((state) => state.darkMode);
+  const showAlert = useModalStore((state) => state.showAlert);
 
   const [selectedCopy, setSelectedCopy] = useState(null);
   const [showIssueModal, setShowIssueModal] = useState(false);
@@ -65,7 +67,7 @@ function Issue() {
 
   const handleIssue = async () => {
     if (!selectedMemberId || !selectedCopy?._id) {
-      alert("Please select a member.");
+      showAlert("Selection Required", "Please select a member.", "warning");
       return;
     }
     try {
@@ -86,8 +88,9 @@ function Issue() {
         status: "available",
         type: "borrow",
       });
+      showAlert("Success", "Book issued successfully!", "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Error issuing book");
+      showAlert("Error", error.response?.data?.message || "Error issuing book", "error");
     }
   };
 
@@ -104,12 +107,17 @@ function Issue() {
   const buttonPrimary = `px-4 py-2 rounded-md text-sm font-medium ${
     darkMode
       ? "bg-blue-600 hover:bg-blue-500 text-white"
-      : "bg-green-600 hover:bg-green-500 text-white"
+      : "bg-blue-600 hover:bg-blue-500 text-white"
   }`;
   const buttonSecondary = `px-3 py-1 rounded-md text-sm font-medium border ${
     darkMode
       ? "border-gray-600 hover:bg-gray-800 text-gray-300"
       : "border-gray-300 hover:bg-gray-100 text-gray-700"
+  }`;
+  const buttonSelected = `px-3 py-1 rounded-md text-sm font-medium ${
+    darkMode
+      ? "bg-blue-600 text-white"
+      : "bg-blue-600 text-white"
   }`;
   const buttonGhost = `px-4 py-2 rounded-md text-sm font-medium border ${
     darkMode
@@ -295,7 +303,7 @@ function Issue() {
                       <td className={tdClass}>
                         <button
                           type="button"
-                          className={buttonSecondary}
+                          className={selectedMemberId === member._id ? buttonSelected : buttonSecondary}
                           onClick={() => setSelectedMemberId(member._id)}
                         >
                           {selectedMemberId === member._id

@@ -116,6 +116,7 @@ export const checkoutSale = async ({
   soldBy,
   discountPct = 0,
   taxPct = 0,
+  payAmount = 0,
 }) => {
   if (!items?.length) {
     throw new Error("Cart is empty");
@@ -123,6 +124,7 @@ export const checkoutSale = async ({
 
   const normalizedItems = items.map((item) => ({
     bookId: item.bookId,
+    copyId: item.copyId,
     quantity: Math.max(parseInt(item.quantity, 10) || 0, 0),
   }));
 
@@ -135,23 +137,42 @@ export const checkoutSale = async ({
   const sales = [];
   let subtotal = 0;
 
-  for (const item of normalizedItems) {
-    const copies = await BookCopy.find({
-      book: item.bookId,
-      type: "sell",
-      status: "available",
-    })
-      .sort({ createdAt: 1 })
-      .limit(item.quantity)
-      .populate("book");
+  for (let i = 0; i < normalizedItems.length; i++) {
+    const item = normalizedItems[i];
+    let copies;
+
+    if (item.copyId) {
+      copies = await BookCopy.find({
+        _id: item.copyId,
+        type: "sell",
+        status: "available",
+      }).populate("book");
+    } else {
+      copies = await BookCopy.find({
+        book: item.bookId,
+        type: "sell",
+        status: "available",
+      })
+        .sort({ createdAt: 1 })
+        .limit(item.quantity)
+        .populate("book");
+    }
 
     if (copies.length < item.quantity) {
       throw new Error("Not enough available copies for a book");
     }
 
-    const saleDocs = copies.map((copy) => ({
+    const discountAmount = (subtotal * (Number(discountPct) || 0)) / 100;
+    const taxable = subtotal - discountAmount;
+    const taxAmount = (taxable * (Number(taxPct) || 0)) / 100;
+    const total = taxable + taxAmount;
+    const change = Math.max(0, Number(payAmount) - total);
+
+    const saleDocs = copies.map((copy, idx) => ({
       bookCopy: copy._id,
       price: copy.price,
+      payAmount: idx === 0 ? Number(payAmount) : 0,
+      change: idx === 0 ? change : 0,
       soldDate: new Date(),
       soldBy,
     }));
@@ -167,20 +188,29 @@ export const checkoutSale = async ({
     subtotal += copies.reduce((sum, c) => sum + (c.price || 0), 0);
   }
 
-  const discountAmount = (subtotal * (Number(discountPct) || 0)) / 100;
-  const taxable = subtotal - discountAmount;
-  const taxAmount = (taxable * (Number(taxPct) || 0)) / 100;
-  const total = taxable + taxAmount;
+  const finalSubtotal = subtotal;
+  const finalDiscountAmount = (finalSubtotal * (Number(discountPct) || 0)) / 100;
+  const finalTaxable = finalSubtotal - finalDiscountAmount;
+  const finalTaxAmount = (finalTaxable * (Number(taxPct) || 0)) / 100;
+  const total = finalTaxable + finalTaxAmount;
+  const finalChange = Math.max(0, Number(payAmount) - total);
+
+  await SaleTransaction.updateMany(
+    { _id: { $in: sales.map(s => s._id) } },
+    { $set: { payAmount: Number(payAmount), change: finalChange } }
+  );
 
   return {
     sales,
     summary: {
-      subtotal,
+      subtotal: finalSubtotal,
       discountPct: Number(discountPct) || 0,
-      discountAmount,
+      discountAmount: finalDiscountAmount,
       taxPct: Number(taxPct) || 0,
-      taxAmount,
+      taxAmount: finalTaxAmount,
       total,
+      payAmount: Number(payAmount),
+      change: finalChange,
     },
   };
 };
