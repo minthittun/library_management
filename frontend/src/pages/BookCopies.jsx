@@ -37,7 +37,7 @@ function BookCopies() {
     status: "",
     price: "",
   });
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
   const [copyForm, setCopyForm] = useState({
     book: "",
     type: "borrow",
@@ -467,12 +467,9 @@ function BookCopies() {
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                form="copyForm"
-                className={buttonPrimary}
-              >
-                Add {copyForm.quantity > 1 ? `${copyForm.quantity} Copies` : "Copy"}
+              <button type="submit" form="copyForm" className={buttonPrimary}>
+                Add{" "}
+                {copyForm.quantity > 1 ? `${copyForm.quantity} Copies` : "Copy"}
               </button>
             </div>
           </div>
@@ -496,7 +493,8 @@ function BookCopies() {
               Select which fields to update
             </p>
             <p className="text-xs text-gray-500 mb-3">
-              Type: <span className="font-medium capitalize">{bulkEditType}</span>
+              Type:{" "}
+              <span className="font-medium capitalize">{bulkEditType}</span>
             </p>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -561,7 +559,10 @@ function BookCopies() {
                     className={inputStyle}
                     value={bulkEditForm.price}
                     onChange={(e) =>
-                      setBulkEditForm({ ...bulkEditForm, price: e.target.value })
+                      setBulkEditForm({
+                        ...bulkEditForm,
+                        price: e.target.value,
+                      })
                     }
                     disabled={!bulkFields.price}
                   />

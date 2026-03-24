@@ -12,7 +12,7 @@ function Sales() {
   const showAlert = useModalStore((state) => state.showAlert);
 
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
   const [results, setResults] = useState([]);
   const [cart, setCart] = useState([]);
   const [discountPct, setDiscountPct] = useState("0");
@@ -113,7 +113,11 @@ function Sales() {
       return;
     }
     if (!payAmount || Number(payAmount) < total) {
-      showAlert("Invalid Payment", "Pay amount must be greater than or equal to total.", "warning");
+      showAlert(
+        "Invalid Payment",
+        "Pay amount must be greater than or equal to total.",
+        "warning",
+      );
       return;
     }
     try {
@@ -136,7 +140,11 @@ function Sales() {
       setPayAmount("");
       showAlert("Success", "Sale completed successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error processing sale", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error processing sale",
+        "error",
+      );
     }
   };
 
@@ -263,15 +271,15 @@ function Sales() {
                 </div>
               ))}
               {cart.length === 0 && (
-                <div className="text-sm text-gray-500">
-                  No items in cart.
-                </div>
+                <div className="text-sm text-gray-500">No items in cart.</div>
               )}
             </div>
             <div className="p-4 border-t" style={{ borderColor: tableBorder }}>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Discount %</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Discount %
+                  </label>
                   <input
                     type="number"
                     className={inputStyle}
@@ -280,7 +288,9 @@ function Sales() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Tax %</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Tax %
+                  </label>
                   <input
                     type="number"
                     className={inputStyle}
@@ -299,7 +309,9 @@ function Sales() {
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Pay Amount</label>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Pay Amount
+                  </label>
                   <input
                     type="number"
                     className={inputStyle}
@@ -308,12 +320,16 @@ function Sales() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Change</label>
-                  <div className={`px-3 py-2 rounded-md border ${
-                    darkMode
-                      ? "bg-[#0d1117] border-gray-600 text-white"
-                      : "bg-gray-50 border-gray-300 text-gray-900"
-                  }`}>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Change
+                  </label>
+                  <div
+                    className={`px-3 py-2 rounded-md border ${
+                      darkMode
+                        ? "bg-[#0d1117] border-gray-600 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  >
                     MMK {change.toFixed(2)}
                   </div>
                 </div>

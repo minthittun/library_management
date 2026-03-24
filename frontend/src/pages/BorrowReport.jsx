@@ -14,7 +14,7 @@ function BorrowReport() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     fetchBorrowRecords({
@@ -152,8 +152,8 @@ function BorrowReport() {
                           ? "bg-yellow-900/50 text-yellow-400"
                           : "bg-yellow-100 text-yellow-700"
                         : darkMode
-                        ? "bg-green-900/50 text-green-400"
-                        : "bg-green-100 text-green-700"
+                          ? "bg-green-900/50 text-green-400"
+                          : "bg-green-100 text-green-700"
                     }`}
                   >
                     {record.status}

@@ -10,7 +10,7 @@ function Payments() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     fetchPayments({ page, limit, search: debouncedSearch });
@@ -119,7 +119,6 @@ function Payments() {
         }}
         darkMode={darkMode}
       />
-
     </div>
   );
 }

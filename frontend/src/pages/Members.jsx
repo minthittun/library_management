@@ -16,13 +16,13 @@ function Members() {
   const [form, setForm] = useState({ name: "", phone: "", address: "" });
   const [paymentForm, setPaymentForm] = useState({
     memberId: "",
-    amount: "50",
+    amount: "",
     monthsExtended: "6",
   });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     fetchMembers({ page, limit, search: debouncedSearch });
@@ -44,7 +44,11 @@ function Members() {
       fetchMembers({ page: 1, limit, search: debouncedSearch });
       showAlert("Success", "Member added successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error adding member", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error adding member",
+        "error",
+      );
     }
   };
 
@@ -66,7 +70,11 @@ function Members() {
       fetchMembers({ page: 1, limit, search: debouncedSearch });
       showAlert("Success", "Payment processed successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error processing payment", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error processing payment",
+        "error",
+      );
     }
   };
 
@@ -195,21 +203,21 @@ function Members() {
                           ? "bg-yellow-900/50 text-yellow-300"
                           : "bg-yellow-100 text-yellow-700"
                         : member.status === "active"
-                        ? darkMode
-                          ? "bg-blue-900/50 text-blue-400"
-                          : "bg-blue-100 text-blue-700"
-                        : darkMode
-                          ? "bg-red-900/50 text-red-400"
-                          : "bg-red-100 text-red-700"
+                          ? darkMode
+                            ? "bg-blue-900/50 text-blue-400"
+                            : "bg-blue-100 text-blue-700"
+                          : darkMode
+                            ? "bg-red-900/50 text-red-400"
+                            : "bg-red-100 text-red-700"
                     }`}
                   >
                     {isSuspended(member)
                       ? "Suspended"
                       : !member.membershipExpiryDate
-                      ? "No Membership"
-                      : isExpired(member.membershipExpiryDate)
-                        ? "Expired"
-                        : "Active"}
+                        ? "No Membership"
+                        : isExpired(member.membershipExpiryDate)
+                          ? "Expired"
+                          : "Active"}
                   </span>
                 </td>
                 <td

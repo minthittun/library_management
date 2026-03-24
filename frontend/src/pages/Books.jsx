@@ -15,7 +15,7 @@ function Books() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   const [bookForm, setBookForm] = useState({
     title: "",
@@ -56,7 +56,11 @@ function Books() {
       fetchBooks({ page: 1, limit, search: debouncedSearch });
       showAlert("Success", "Book added successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error adding book", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error adding book",
+        "error",
+      );
     }
   };
 

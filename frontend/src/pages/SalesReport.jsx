@@ -13,7 +13,7 @@ function SalesReport() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     fetchSales({
@@ -126,8 +126,12 @@ function SalesReport() {
                 </td>
                 <td className={tdClass}>{sale.bookCopy?.barcode || "N/A"}</td>
                 <td className={tdClass}>MMK {sale.price?.toFixed(2)}</td>
-                <td className={tdClass}>MMK {sale.payAmount?.toFixed(2) || "0.00"}</td>
-                <td className={tdClass}>MMK {sale.change?.toFixed(2) || "0.00"}</td>
+                <td className={tdClass}>
+                  MMK {sale.payAmount?.toFixed(2) || "0.00"}
+                </td>
+                <td className={tdClass}>
+                  MMK {sale.change?.toFixed(2) || "0.00"}
+                </td>
                 <td className={tdClass}>{formatDate(sale.soldDate)}</td>
                 <td className={tdClass}>{sale.soldBy}</td>
               </tr>

@@ -33,7 +33,7 @@ function Borrow() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     fetchMembers({ page: 1, limit: 1000, status: "active" });
@@ -72,7 +72,11 @@ function Borrow() {
       );
       showAlert("Success", "Book borrowed successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error borrowing book", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error borrowing book",
+        "error",
+      );
     }
   };
 
@@ -91,7 +95,11 @@ function Borrow() {
       );
       showAlert("Success", "Book returned successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error returning book", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error returning book",
+        "error",
+      );
     }
   };
 

@@ -14,7 +14,7 @@ function Return() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     fetchBorrowRecords({
@@ -43,7 +43,11 @@ function Return() {
       });
       showAlert("Success", "Book returned successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error returning book", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error returning book",
+        "error",
+      );
     }
   };
 

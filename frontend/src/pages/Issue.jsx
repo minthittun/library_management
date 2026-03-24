@@ -24,7 +24,7 @@ function Issue() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 500);
   const [memberSearch, setMemberSearch] = useState("");
   const [memberPage, setMemberPage] = useState(1);
   const [memberLimit, setMemberLimit] = useState(10);
@@ -90,7 +90,11 @@ function Issue() {
       });
       showAlert("Success", "Book issued successfully!", "success");
     } catch (error) {
-      showAlert("Error", error.response?.data?.message || "Error issuing book", "error");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error issuing book",
+        "error",
+      );
     }
   };
 
@@ -115,9 +119,7 @@ function Issue() {
       : "border-gray-300 hover:bg-gray-100 text-gray-700"
   }`;
   const buttonSelected = `px-3 py-1 rounded-md text-sm font-medium ${
-    darkMode
-      ? "bg-blue-600 text-white"
-      : "bg-blue-600 text-white"
+    darkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"
   }`;
   const buttonGhost = `px-4 py-2 rounded-md text-sm font-medium border ${
     darkMode
@@ -303,7 +305,11 @@ function Issue() {
                       <td className={tdClass}>
                         <button
                           type="button"
-                          className={selectedMemberId === member._id ? buttonSelected : buttonSecondary}
+                          className={
+                            selectedMemberId === member._id
+                              ? buttonSelected
+                              : buttonSecondary
+                          }
                           onClick={() => setSelectedMemberId(member._id)}
                         >
                           {selectedMemberId === member._id
