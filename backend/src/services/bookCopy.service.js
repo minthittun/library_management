@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import BookCopy from '../models/BookCopy.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
@@ -8,6 +9,7 @@ export const createBookCopy = async (copyData) => {
     for (let i = 0; i < copyData.quantity; i++) {
       copies.push({
         book: copyData.book,
+        library: copyData.library,
         type: copyData.type,
         barcode: generateBarcode(),
         status: 'available',
@@ -34,6 +36,7 @@ export const getAllBookCopies = async (params = {}) => {
   const searchRegex = buildSearchRegex(params.search);
 
   const match = {};
+  if (params.library) match.library = new mongoose.Types.ObjectId(params.library);
   if (params.type) match.type = params.type;
   if (params.status) match.status = params.status;
   if (params.bookId) match.book = params.bookId;
@@ -49,6 +52,15 @@ export const getAllBookCopies = async (params = {}) => {
       }
     },
     { $unwind: { path: '$book', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'libraries',
+        localField: 'library',
+        foreignField: '_id',
+        as: 'library'
+      }
+    },
+    { $unwind: { path: '$library', preserveNullAndEmptyArrays: true } },
   ];
 
   if (searchRegex) {
@@ -85,27 +97,33 @@ export const getAllBookCopies = async (params = {}) => {
 };
 
 export const getBookCopyById = async (id) => {
-  return await BookCopy.findById(id).populate('book');
+  return await BookCopy.findById(id).populate('book').populate('library');
 };
 
-export const getAvailableBorrowCopies = async (bookId) => {
-  return await BookCopy.find({ 
+export const getAvailableBorrowCopies = async (bookId, libraryId) => {
+  const query = { 
     book: bookId, 
     type: 'borrow', 
     status: 'available' 
-  }).populate('book');
+  };
+  if (libraryId) query.library = libraryId;
+  return await BookCopy.find(query).populate('book');
 };
 
-export const getAvailableSellCopies = async (bookId) => {
-  return await BookCopy.find({ 
+export const getAvailableSellCopies = async (bookId, libraryId) => {
+  const query = { 
     book: bookId, 
     type: 'sell', 
     status: 'available' 
-  }).populate('book');
+  };
+  if (libraryId) query.library = libraryId;
+  return await BookCopy.find(query).populate('book');
 };
 
-export const getAllAvailableCopies = async () => {
-  return await BookCopy.find({ status: 'available' })
+export const getAllAvailableCopies = async (libraryId) => {
+  const query = { status: 'available' };
+  if (libraryId) query.library = libraryId;
+  return await BookCopy.find(query)
     .populate('book')
     .sort({ createdAt: -1 });
 };

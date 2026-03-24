@@ -22,6 +22,7 @@ function BookCopies() {
 
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [bulkEditType, setBulkEditType] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -61,12 +62,12 @@ function BookCopies() {
   const handleCopySubmit = async (e) => {
     e.preventDefault();
     try {
+      const quantity = parseInt(copyForm.quantity) || 1;
       const payload = {
         book: copyForm.book,
         type: copyForm.type,
-        price:
-          copyForm.type === "sell" ? parseFloat(copyForm.price) : undefined,
-        quantity: copyForm.type === "sell" ? parseInt(copyForm.quantity) : 1,
+        price: copyForm.price ? parseFloat(copyForm.price) : undefined,
+        quantity,
       };
       const result = await addBookCopy(payload);
       const count = Array.isArray(result) ? result.length : 1;
@@ -130,6 +131,7 @@ function BookCopies() {
     }
     setBulkFields({ type: false, status: false, price: false });
     setBulkEditForm({ type: "", status: "", price: "" });
+    setBulkEditType(types[0]);
     setShowBulkEditModal(true);
   };
 
@@ -425,8 +427,8 @@ function BookCopies() {
                 <option value="borrow">Borrow</option>
                 <option value="sell">Sell</option>
               </select>
-              {copyForm.type === "sell" && (
-                <div className="flex gap-3">
+              <div className="flex gap-3">
+                {copyForm.type === "sell" && (
                   <input
                     type="number"
                     placeholder="Price"
@@ -437,22 +439,22 @@ function BookCopies() {
                     }
                     required
                   />
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    className={`${inputStyle} w-24`}
-                    value={copyForm.quantity}
-                    min="1"
-                    onChange={(e) =>
-                      setCopyForm({
-                        ...copyForm,
-                        quantity: e.target.value || 1,
-                      })
-                    }
-                    required
-                  />
-                </div>
-              )}
+                )}
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  className={`${inputStyle} ${copyForm.type === "borrow" ? "flex-1" : "w-24"}`}
+                  value={copyForm.quantity}
+                  min="1"
+                  onChange={(e) =>
+                    setCopyForm({
+                      ...copyForm,
+                      quantity: e.target.value || 1,
+                    })
+                  }
+                  required
+                />
+              </div>
             </form>
             <div
               className="flex justify-end gap-3 p-6 pt-4 border-t"
@@ -470,9 +472,7 @@ function BookCopies() {
                 form="copyForm"
                 className={buttonPrimary}
               >
-                {copyForm.type === "sell"
-                  ? `Add ${copyForm.quantity || 1} Copies`
-                  : "Add"}
+                Add {copyForm.quantity > 1 ? `${copyForm.quantity} Copies` : "Copy"}
               </button>
             </div>
           </div>
@@ -494,6 +494,9 @@ function BookCopies() {
             </h2>
             <p className="text-sm text-gray-500 mb-4">
               Select which fields to update
+            </p>
+            <p className="text-xs text-gray-500 mb-3">
+              Type: <span className="font-medium capitalize">{bulkEditType}</span>
             </p>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -542,26 +545,28 @@ function BookCopies() {
                   <option value="lost">Lost</option>
                 </select>
               </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={bulkFields.price}
-                  onChange={(e) =>
-                    setBulkFields({ ...bulkFields, price: e.target.checked })
-                  }
-                  className="w-4 h-4 cursor-pointer"
-                />
-                <input
-                  type="number"
-                  placeholder="Price"
-                  className={inputStyle}
-                  value={bulkEditForm.price}
-                  onChange={(e) =>
-                    setBulkEditForm({ ...bulkEditForm, price: e.target.value })
-                  }
-                  disabled={!bulkFields.price}
-                />
-              </div>
+              {bulkEditType === "sell" && (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bulkFields.price}
+                    onChange={(e) =>
+                      setBulkFields({ ...bulkFields, price: e.target.checked })
+                    }
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price"
+                    className={inputStyle}
+                    value={bulkEditForm.price}
+                    onChange={(e) =>
+                      setBulkEditForm({ ...bulkEditForm, price: e.target.value })
+                    }
+                    disabled={!bulkFields.price}
+                  />
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-3 mt-4">
               <button

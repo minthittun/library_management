@@ -1,20 +1,20 @@
 import express from 'express';
 import * as bookController from '../controllers/book.controller.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/books', bookController.getBooks);
-router.get('/books/:id', bookController.getBookById);
+router.get('/books', authenticateToken, bookController.getBooks);
+router.get('/books/:id', authenticateToken, bookController.getBookById);
 
-router.post('/books', authenticateToken, bookController.createBook);
-router.put('/books/:id', authenticateToken, bookController.updateBook);
-router.delete('/books/:id', authenticateToken, bookController.deleteBook);
+router.post('/books', authenticateToken, requireAdmin, bookController.createBook);
+router.put('/books/:id', authenticateToken, requireAdmin, bookController.updateBook);
+router.delete('/books/:id', authenticateToken, requireAdmin, bookController.deleteBook);
 
-router.post('/book-copies', authenticateToken, bookController.createBookCopy);
+router.post('/book-copies', authenticateToken, requireAdmin, bookController.createBookCopy);
 router.get('/book-copies', authenticateToken, bookController.getBookCopies);
 router.get('/available-copies', authenticateToken, bookController.getAvailableCopies);
-router.put('/book-copies/bulk', authenticateToken, bookController.bulkUpdateBookCopies);
-router.delete('/book-copies/bulk', authenticateToken, bookController.bulkDeleteBookCopies);
+router.put('/book-copies/bulk', authenticateToken, requireAdmin, bookController.bulkUpdateBookCopies);
+router.delete('/book-copies/bulk', authenticateToken, requireAdmin, bookController.bulkDeleteBookCopies);
 
 export default router;

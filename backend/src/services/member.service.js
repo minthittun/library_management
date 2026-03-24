@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Member from '../models/Member.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
@@ -15,6 +16,9 @@ export const getAllMembers = async (params = {}) => {
   const searchRegex = buildSearchRegex(params.search);
 
   const query = {};
+  if (params.library) {
+    query.library = new mongoose.Types.ObjectId(params.library);
+  }
   if (params.status) {
     query.status = params.status;
   }
@@ -29,6 +33,7 @@ export const getAllMembers = async (params = {}) => {
 
   const total = await Member.countDocuments(query);
   const data = await Member.find(query)
+    .populate('library')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -37,7 +42,7 @@ export const getAllMembers = async (params = {}) => {
 };
 
 export const getMemberById = async (id) => {
-  return await Member.findById(id);
+  return await Member.findById(id).populate('library');
 };
 
 export const updateMember = async (id, memberData) => {

@@ -1,8 +1,19 @@
 import * as memberService from '../services/member.service.js';
 
+const getLibraryId = (req) => {
+  if (req.user.role === 'superadmin') {
+    return req.body.library || req.query.library || null;
+  }
+  return req.user.libraries?.[0] || null;
+};
+
 export const createMember = async (req, res, next) => {
   try {
-    const member = await memberService.createMember(req.body);
+    const libraryId = getLibraryId(req);
+    if (!libraryId) {
+      return res.status(400).json({ message: 'No library assigned. Please contact admin.' });
+    }
+    const member = await memberService.createMember({ ...req.body, library: libraryId });
     res.status(201).json(member);
   } catch (error) {
     next(error);
@@ -11,7 +22,8 @@ export const createMember = async (req, res, next) => {
 
 export const getMembers = async (req, res, next) => {
   try {
-    const members = await memberService.getAllMembers(req.query);
+    const libraryId = getLibraryId(req);
+    const members = await memberService.getAllMembers({ ...req.query, library: libraryId });
     res.json(members);
   } catch (error) {
     next(error);

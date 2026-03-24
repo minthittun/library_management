@@ -1,11 +1,18 @@
+import mongoose from 'mongoose';
 import SaleTransaction from '../models/SaleTransaction.js';
 import BookCopy from '../models/BookCopy.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
 
-export const sellBook = async (bookCopyId, soldBy) => {
+export const sellBook = async (bookCopyId, soldBy, libraryId) => {
+  if (!libraryId) throw new Error('Library ID is required');
+  
   const bookCopy = await BookCopy.findById(bookCopyId).populate('book');
   if (!bookCopy) throw new Error('Book copy not found');
+  
+  if (bookCopy.library.toString() !== libraryId) {
+    throw new Error('Book copy does not belong to your library');
+  }
   
   if (bookCopy.type !== 'sell') {
     throw new Error('This copy is not available for sale');
@@ -17,6 +24,7 @@ export const sellBook = async (bookCopyId, soldBy) => {
   
   const transaction = new SaleTransaction({
     bookCopy: bookCopyId,
+    library: libraryId,
     price: bookCopy.price,
     soldDate: new Date(),
     soldBy
@@ -32,26 +40,29 @@ export const sellBook = async (bookCopyId, soldBy) => {
 export const getAllSales = async (params = {}) => {
   const { page, limit, skip } = normalizePagination(params);
   const searchRegex = buildSearchRegex(params.search);
-  const dateMatch = {};
+  const match = {};
+  
+  if (params.library) match.library = new mongoose.Types.ObjectId(params.library);
+  
   if (params.from) {
     const fromDate = new Date(params.from);
     if (!Number.isNaN(fromDate.getTime())) {
-      dateMatch.$gte = fromDate;
+      match.soldDate = { $gte: fromDate };
     }
   }
   if (params.to) {
     const toDate = new Date(params.to);
     if (!Number.isNaN(toDate.getTime())) {
       toDate.setHours(23, 59, 59, 999);
-      dateMatch.$lte = toDate;
+      if (match.soldDate) {
+        match.soldDate.$lte = toDate;
+      } else {
+        match.soldDate = { $lte: toDate };
+      }
     }
   }
 
-  const pipeline = [];
-
-  if (Object.keys(dateMatch).length > 0) {
-    pipeline.push({ $match: { soldDate: dateMatch } });
-  }
+  const pipeline = [{ $match: match }];
 
   pipeline.push(
     {
@@ -114,6 +125,7 @@ export const getAllSales = async (params = {}) => {
 export const checkoutSale = async ({
   items,
   soldBy,
+  libraryId,
   discountPct = 0,
   taxPct = 0,
   payAmount = 0,
@@ -141,17 +153,21 @@ export const checkoutSale = async ({
     const item = normalizedItems[i];
     let copies;
 
+    const baseQuery = {
+      type: "sell",
+      status: "available",
+    };
+    if (libraryId) baseQuery.library = libraryId;
+
     if (item.copyId) {
       copies = await BookCopy.find({
         _id: item.copyId,
-        type: "sell",
-        status: "available",
+        ...baseQuery,
       }).populate("book");
     } else {
       copies = await BookCopy.find({
         book: item.bookId,
-        type: "sell",
-        status: "available",
+        ...baseQuery,
       })
         .sort({ createdAt: 1 })
         .limit(item.quantity)
@@ -170,6 +186,7 @@ export const checkoutSale = async ({
 
     const saleDocs = copies.map((copy, idx) => ({
       bookCopy: copy._id,
+      library: libraryId,
       price: copy.price,
       payAmount: idx === 0 ? Number(payAmount) : 0,
       change: idx === 0 ? change : 0,

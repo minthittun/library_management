@@ -6,6 +6,7 @@ import borrowRoutes from './routes/borrow.routes.js';
 import saleRoutes from './routes/sale.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import libraryRoutes from './routes/library.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', authRoutes);
+app.use('/api', libraryRoutes);
 app.use('/api', bookRoutes);
 app.use('/api', memberRoutes);
 app.use('/api', borrowRoutes);

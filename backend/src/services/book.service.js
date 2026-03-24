@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Book from '../models/Book.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
@@ -12,6 +13,9 @@ export const getAllBooks = async (params = {}) => {
   const searchRegex = buildSearchRegex(params.search);
 
   const query = {};
+  if (params.library) {
+    query.library = new mongoose.Types.ObjectId(params.library);
+  }
   if (searchRegex) {
     const orConditions = [
       { title: searchRegex },
@@ -29,6 +33,7 @@ export const getAllBooks = async (params = {}) => {
 
   const total = await Book.countDocuments(query);
   const data = await Book.find(query)
+    .populate('library')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);

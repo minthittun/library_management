@@ -6,7 +6,8 @@ const bookSchema = new mongoose.Schema({
   isbn: { type: String, required: true, unique: true },
   category: { type: String, required: true },
   publisher: { type: String, required: true },
-  publishedYear: { type: Number, required: true }
+  publishedYear: { type: Number, required: true },
+  library: { type: mongoose.Schema.Types.ObjectId, ref: 'Library', required: true }
 }, { timestamps: true });
 
 const Book = mongoose.model('Book', bookSchema);

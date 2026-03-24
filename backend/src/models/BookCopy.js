@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const bookCopySchema = new mongoose.Schema(
   {
     book: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
+    library: { type: mongoose.Schema.Types.ObjectId, ref: "Library", required: true },
     type: { type: String, enum: ["borrow", "sell"], required: true },
     status: {
       type: String,

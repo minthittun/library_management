@@ -7,8 +7,10 @@ export const normalizePagination = (params = {}) => {
 
 export const buildPaginatedResponse = (data, page, limit, total) => ({
   data,
-  page,
-  limit,
-  total,
-  totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+  pagination: {
+    page,
+    limit,
+    total,
+    totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+  }
 });

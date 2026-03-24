@@ -1,10 +1,13 @@
+import mongoose from 'mongoose';
 import BorrowTransaction from '../models/BorrowTransaction.js';
 import BookCopy from '../models/BookCopy.js';
 import Member from '../models/Member.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
 
-export const borrowBook = async (memberId, bookCopyId) => {
+export const borrowBook = async (memberId, bookCopyId, libraryId) => {
+  if (!libraryId) throw new Error('Library ID is required');
+  
   const member = await Member.findById(memberId);
   if (!member) throw new Error('Member not found');
   
@@ -18,6 +21,10 @@ export const borrowBook = async (memberId, bookCopyId) => {
   
   const bookCopy = await BookCopy.findById(bookCopyId);
   if (!bookCopy) throw new Error('Book copy not found');
+  
+  if (bookCopy.library.toString() !== libraryId) {
+    throw new Error('Book copy does not belong to your library');
+  }
   
   if (bookCopy.type !== 'borrow') {
     throw new Error('This copy is not available for borrowing');
@@ -33,6 +40,7 @@ export const borrowBook = async (memberId, bookCopyId) => {
   const transaction = new BorrowTransaction({
     member: memberId,
     bookCopy: bookCopyId,
+    library: libraryId,
     borrowDate: new Date(),
     dueDate,
     status: 'borrowed'
@@ -68,6 +76,7 @@ export const getAllBorrowTransactions = async (params = {}) => {
   const searchRegex = buildSearchRegex(params.search);
 
   const match = {};
+  if (params.library) match.library = new mongoose.Types.ObjectId(params.library);
   if (params.status) match.status = params.status;
 
   const pipeline = [

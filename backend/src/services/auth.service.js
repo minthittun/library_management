@@ -1,31 +1,90 @@
-import Librarian from '../models/Librarian.js';
-import { generateToken } from '../middleware/auth.js';
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
+import Library from "../models/Library.js";
+import { generateToken } from "../middleware/auth.js";
+
+const SALT_ROUNDS = 10;
 
 export const login = async (username, password) => {
-  const librarian = await Librarian.findOne({ username });
-  if (!librarian) {
-    throw new Error('Invalid credentials');
+  const user = await User.findOne({ username, isActive: true }).populate(
+    "libraries",
+  );
+  if (!user) {
+    throw new Error("Invalid credentials");
   }
 
-  if (password !== librarian.password) {
-    throw new Error('Invalid credentials');
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid) {
+    throw new Error("Invalid credentials");
   }
 
-  const token = generateToken(librarian);
-  return { token, librarian: { id: librarian._id, username: librarian.username, name: librarian.name } };
+  const token = generateToken(user);
+  return {
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      libraries: user.libraries,
+    },
+  };
 };
 
-export const registerLibrarian = async (data) => {
-  const existing = await Librarian.findOne({ username: data.username });
+export const registerUser = async (data) => {
+  const existing = await User.findOne({ username: data.username });
   if (existing) {
-    throw new Error('Username already exists');
+    throw new Error("Username already exists");
   }
 
-  const librarian = new Librarian(data);
-  await librarian.save();
-  return { id: librarian._id, username: librarian.username, name: librarian.name };
+  const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+  const user = new User({ ...data, password: hashedPassword });
+  await user.save();
+  return {
+    id: user._id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  };
 };
 
-export const getLibrarians = async () => {
-  return await Librarian.find().select('-password');
+export const getUsers = async () => {
+  return await User.find({ role: "admin" })
+    .select("-password")
+    .populate("libraries");
+};
+
+export const getUserById = async (id) => {
+  return await User.findById(id).select("-password").populate("libraries");
+};
+
+export const createUser = async (data) => {
+  const existing = await User.findOne({ username: data.username });
+  if (existing) {
+    throw new Error("Username already exists");
+  }
+
+  const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+  const user = new User({ ...data, password: hashedPassword });
+  await user.save();
+  return {
+    id: user._id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  };
+};
+
+export const updateUser = async (id, data) => {
+  const user = await User.findByIdAndUpdate(id, data, { new: true })
+    .select("-password")
+    .populate("libraries");
+  if (!user) {
+    throw new Error("User not found");
+  }
+  return user;
+};
+
+export const deleteUser = async (id) => {
+  await User.findByIdAndDelete(id);
 };

@@ -30,6 +30,19 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (data) => api.post("/auth/login", data),
   register: (data) => api.post("/auth/register", data),
+  getUsers: () => api.get("/auth/users"),
+  getUser: (id) => api.get(`/auth/users/${id}`),
+  createUser: (data) => api.post("/auth/users", data),
+  updateUser: (id, data) => api.put(`/auth/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`),
+};
+
+export const libraryAPI = {
+  getLibraries: (params) => api.get("/libraries", { params }),
+  getLibrary: (id) => api.get(`/libraries/${id}`),
+  createLibrary: (data) => api.post("/libraries", data),
+  updateLibrary: (id, data) => api.put(`/libraries/${id}`, data),
+  deleteLibrary: (id) => api.delete(`/libraries/${id}`),
 };
 
 export const bookAPI = {
@@ -75,6 +88,7 @@ export const paymentAPI = {
 
 export const dashboardAPI = {
   getStats: () => api.get("/dashboard"),
+  getSuperAdminStats: () => api.get("/superadmin/dashboard"),
 };
 
 export default api;

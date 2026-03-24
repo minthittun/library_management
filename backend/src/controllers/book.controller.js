@@ -2,9 +2,20 @@ import * as bookService from '../services/book.service.js';
 import * as bookCopyService from '../services/bookCopy.service.js';
 import BookCopy from '../models/BookCopy.js';
 
+const getLibraryId = (req) => {
+  if (req.user.role === 'superadmin') {
+    return req.body.library || req.query.library || null;
+  }
+  return req.user.libraries?.[0] || null;
+};
+
 export const createBook = async (req, res, next) => {
   try {
-    const book = await bookService.createBook(req.body);
+    const libraryId = getLibraryId(req);
+    if (!libraryId) {
+      return res.status(400).json({ message: 'No library assigned. Please contact admin.' });
+    }
+    const book = await bookService.createBook({ ...req.body, library: libraryId });
     res.status(201).json(book);
   } catch (error) {
     next(error);
@@ -13,7 +24,8 @@ export const createBook = async (req, res, next) => {
 
 export const getBooks = async (req, res, next) => {
   try {
-    const books = await bookService.getAllBooks(req.query);
+    const libraryId = getLibraryId(req);
+    const books = await bookService.getAllBooks({ ...req.query, library: libraryId });
     res.json(books);
   } catch (error) {
     next(error);
@@ -52,7 +64,11 @@ export const deleteBook = async (req, res, next) => {
 
 export const createBookCopy = async (req, res, next) => {
   try {
-    const result = await bookCopyService.createBookCopy(req.body);
+    const libraryId = getLibraryId(req);
+    if (!libraryId) {
+      return res.status(400).json({ message: 'No library assigned. Please contact admin.' });
+    }
+    const result = await bookCopyService.createBookCopy({ ...req.body, library: libraryId });
     const ids = Array.isArray(result) ? result.map(r => r._id) : [result._id];
     const populatedCopies = await BookCopy.find({ _id: { $in: ids } }).populate('book');
     res.status(201).json(Array.isArray(result) ? populatedCopies : populatedCopies[0]);
@@ -63,7 +79,8 @@ export const createBookCopy = async (req, res, next) => {
 
 export const getBookCopies = async (req, res, next) => {
   try {
-    const copies = await bookCopyService.getAllBookCopies(req.query);
+    const libraryId = getLibraryId(req);
+    const copies = await bookCopyService.getAllBookCopies({ ...req.query, library: libraryId });
     res.json(copies);
   } catch (error) {
     next(error);
@@ -73,13 +90,14 @@ export const getBookCopies = async (req, res, next) => {
 export const getAvailableCopies = async (req, res, next) => {
   try {
     const { bookId, type } = req.query;
+    const libraryId = getLibraryId(req);
     let copies;
     if (type === 'borrow') {
-      copies = await bookCopyService.getAvailableBorrowCopies(bookId);
+      copies = await bookCopyService.getAvailableBorrowCopies(bookId, libraryId);
     } else if (type === 'sell') {
-      copies = await bookCopyService.getAvailableSellCopies(bookId);
+      copies = await bookCopyService.getAvailableSellCopies(bookId, libraryId);
     } else {
-      copies = await bookCopyService.getAllAvailableCopies();
+      copies = await bookCopyService.getAllAvailableCopies(libraryId);
     }
     res.json(copies);
   } catch (error) {

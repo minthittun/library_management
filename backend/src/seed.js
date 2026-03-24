@@ -1,32 +1,17 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const librarianSchema = new mongoose.Schema(
-  {
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    name: { type: String, required: true },
-  },
-  { timestamps: true },
+await mongoose.connect(
+  process.env.MONGODB_URI || "mongodb://localhost:27017/library",
 );
+console.log("Connected to MongoDB");
 
-const Librarian = mongoose.model("Librarian", librarianSchema);
-
-const bookSchema = new mongoose.Schema(
-  {
-    title: { type: String, required: true },
-    author: { type: String, required: true },
-    isbn: { type: String, required: true, unique: true },
-    category: { type: String, required: true },
-    publisher: { type: String, required: true },
-    publishedYear: { type: Number, required: true },
-  },
-  { timestamps: true },
-);
-
-const Book = mongoose.model("Book", bookSchema);
+const User = (await import("./models/User.js")).default;
+const Library = (await import("./models/Library.js")).default;
+const Book = (await import("./models/Book.js")).default;
 
 const categories = [
   "Fiction",
@@ -46,7 +31,7 @@ const publishers = [
   "HarperCollins",
   "Simon & Schuster",
   "Macmillan",
-  " Hachette",
+  "Hachette",
   "Oxford University Press",
   "Cambridge University Press",
   "Wiley",
@@ -99,6 +84,27 @@ const bookTitles = [
   "The Sports Arena", "Game On", "The Champion's Tale", "Victory",
 ];
 
+const libraryData = [
+  {
+    name: "Central Library",
+    address: "123 Main Street, Downtown",
+    phone: "555-0101",
+    email: "central@library.com",
+  },
+  {
+    name: "North Branch",
+    address: "456 North Avenue, Northside",
+    phone: "555-0102",
+    email: "north@library.com",
+  },
+  {
+    name: "South Branch",
+    address: "789 South Road, Southside",
+    phone: "555-0103",
+    email: "south@library.com",
+  },
+];
+
 const generateISBN = () => {
   const prefix = "978";
   const group = Math.floor(Math.random() * 2);
@@ -108,7 +114,79 @@ const generateISBN = () => {
   return `${prefix}-${group}-${publisher}-${title}-${checkDigit}`;
 };
 
-const seedBooks = async () => {
+const seedSuperAdmin = async () => {
+  const superadminExists = await User.findOne({ username: "superadmin" });
+  if (superadminExists) {
+    console.log("Super Admin user already exists");
+  } else {
+    const hashedPassword = await bcrypt.hash("admin123", 10);
+    await User.create({
+      username: "superadmin",
+      password: hashedPassword,
+      name: "Super Administrator",
+      role: "superadmin",
+    });
+    console.log("Super Admin user created successfully");
+    console.log("Username: superadmin");
+    console.log("Password: admin123");
+  }
+};
+
+const seedLibraries = async () => {
+  const existingLibraries = await Library.countDocuments();
+  if (existingLibraries > 0) {
+    console.log(`Database already has ${existingLibraries} libraries. Skipping library seeding.`);
+    return await Library.find();
+  }
+  
+  const libraries = await Library.insertMany(libraryData);
+  console.log(`${libraries.length} libraries seeded successfully!`);
+  return libraries;
+};
+
+const seedAdmins = async (libraries) => {
+  const adminExists = await User.findOne({ username: "admin" });
+  if (adminExists) {
+    console.log("Admin user already exists");
+  } else {
+    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const adminData = [
+      {
+        username: "admin",
+        password: hashedPassword,
+        name: "Central Admin",
+        role: "admin",
+        libraries: [libraries[0]._id],
+      },
+      {
+        username: "northadmin",
+        password: hashedPassword,
+        name: "North Branch Admin",
+        role: "admin",
+        libraries: [libraries[1]._id],
+      },
+      {
+        username: "southadmin",
+        password: hashedPassword,
+        name: "South Branch Admin",
+        role: "admin",
+        libraries: [libraries[2]._id],
+      },
+    ];
+    await User.insertMany(adminData);
+    console.log("Admin users created successfully");
+    console.log("Admin usernames: admin, northadmin, southadmin");
+    console.log("Password for all: admin123");
+  }
+};
+
+const seedBooks = async (libraries) => {
+  const existingBooks = await Book.countDocuments();
+  if (existingBooks > 0) {
+    console.log(`Database already has ${existingBooks} books. Skipping book seeding.`);
+    return;
+  }
+
   const books = [];
   const usedTitles = new Set();
 
@@ -122,6 +200,8 @@ const seedBooks = async () => {
     } while (usedTitles.has(title));
     usedTitles.add(title);
 
+    const library = libraries[Math.floor(Math.random() * libraries.length)];
+
     const book = {
       title,
       author: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
@@ -131,43 +211,26 @@ const seedBooks = async () => {
       category: categories[Math.floor(Math.random() * categories.length)],
       publisher: publishers[Math.floor(Math.random() * publishers.length)],
       publishedYear: Math.floor(Math.random() * (2024 - 1980 + 1)) + 1980,
+      library: library._id,
     };
     books.push(book);
   }
 
-  return books;
+  await Book.insertMany(books);
+  console.log(`${books.length} books seeded successfully!`);
 };
 
 const seedAll = async () => {
   try {
-    await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/library",
-    );
-    console.log("Connected to MongoDB");
+    await seedSuperAdmin();
+    const libraries = await seedLibraries();
+    await seedAdmins(libraries);
+    await seedBooks(libraries);
 
-    const adminExists = await Librarian.findOne({ username: "admin" });
-
-    if (adminExists) {
-      console.log("Admin user already exists");
-    } else {
-      await Librarian.create({
-        username: "admin",
-        password: "admin123",
-        name: "Administrator",
-      });
-      console.log("Admin user created successfully");
-      console.log("Username: admin");
-      console.log("Password: admin123");
-    }
-
-    const existingBooks = await Book.countDocuments();
-    if (existingBooks > 0) {
-      console.log(`Database already has ${existingBooks} books. Skipping book seeding.`);
-    } else {
-      const books = await seedBooks();
-      await Book.insertMany(books);
-      console.log(`${books.length} books seeded successfully!`);
-    }
+    console.log("\nSeeding completed!");
+    console.log("\n=== Login Credentials ===");
+    console.log("Super Admin: superadmin / admin123");
+    console.log("Library Admins: admin, northadmin, southadmin / admin123");
 
     process.exit(0);
   } catch (error) {

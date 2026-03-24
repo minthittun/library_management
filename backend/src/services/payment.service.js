@@ -1,14 +1,16 @@
+import mongoose from 'mongoose';
 import MembershipPayment from '../models/MembershipPayment.js';
 import Member from '../models/Member.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
 
-export const createPayment = async (memberId, amount, monthsExtended = 6) => {
+export const createPayment = async (memberId, amount, monthsExtended = 6, libraryId) => {
   const member = await Member.findById(memberId);
   if (!member) throw new Error('Member not found');
   
   const payment = new MembershipPayment({
     member: memberId,
+    library: libraryId,
     amount,
     monthsExtended,
     paymentDate: new Date()
@@ -41,7 +43,11 @@ export const getAllPayments = async (params = {}) => {
   const { page, limit, skip } = normalizePagination(params);
   const searchRegex = buildSearchRegex(params.search);
 
+  const match = {};
+  if (params.library) match.library = new mongoose.Types.ObjectId(params.library);
+
   const pipeline = [
+    { $match: match },
     {
       $lookup: {
         from: 'members',
