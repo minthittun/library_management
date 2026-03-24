@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import ModalProvider from "./components/ModalProvider";
@@ -26,7 +27,7 @@ function ProtectedRoute({ children }) {
 
 function DashboardRouter() {
   const user = useAuthStore((state) => state.user);
-  if (user?.role === 'superadmin') {
+  if (user?.role === "superadmin") {
     return <SuperAdminDashboard />;
   }
   return <Dashboard />;
@@ -36,15 +37,15 @@ function Layout({ children }) {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
-  const darkMode = useUIStore((state) => state.darkMode);
+  const density = useUIStore((state) => state.density);
 
   return (
-    <div className={`min-h-screen ${darkMode ? "bg-[#010409]" : "bg-[#ffffff]"}`}>
+    <div className={`app-shell density-${density}`}>
       <Navbar onLogout={logout} user={user} />
-      <div className="flex pt-12">
+      <div className="flex pt-20">
         <Sidebar />
         <main
-          className={`flex-1 p-6 transition-all duration-200 ${
+          className={`modern-content flex-1 px-4 pb-8 pt-4 transition-all duration-200 md:px-6 ${
             sidebarCollapsed ? "ml-16" : "ml-72"
           }`}
         >
@@ -56,6 +57,12 @@ function Layout({ children }) {
 }
 
 function App() {
+  const initDarkMode = useUIStore((state) => state.initDarkMode);
+
+  useEffect(() => {
+    initDarkMode();
+  }, [initDarkMode]);
+
   return (
     <BrowserRouter>
       <ModalProvider />

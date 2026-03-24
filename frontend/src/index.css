@@ -1,7 +1,243 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --bg: #f4f7fb;
+  --text: #0f172a;
+  --muted: #4b5563;
+  --panel: rgba(255, 255, 255, 0.9);
+  --panel-solid: #ffffff;
+  --panel-border: rgba(148, 163, 184, 0.3);
+  --accent: #0ea5e9;
+  --accent-soft: rgba(14, 165, 233, 0.14);
+  --input: #ffffff;
+  --ring: rgba(14, 165, 233, 0.35);
+  --surface-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  --status-danger: #dc2626;
+}
+
+html.dark {
+  color-scheme: dark;
+  --bg: #060c16;
+  --text: #e5edf7;
+  --muted: #93a4bc;
+  --panel: rgba(12, 20, 35, 0.82);
+  --panel-solid: #0e1728;
+  --panel-border: rgba(71, 85, 105, 0.48);
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.18);
+  --input: #0c1525;
+  --ring: rgba(34, 211, 238, 0.3);
+  --surface-shadow: 0 24px 54px rgba(2, 8, 23, 0.42);
+  --status-danger: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  margin: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.app-shell {
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.panel-solid {
+  background: var(--panel-solid);
+  border: 1px solid var(--panel-border);
+}
+
+.modern-input {
+  background: var(--input);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+}
+
+.modern-input:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.modern-input::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.glow-btn {
+  background: var(--accent);
+  color: #f8fafc;
+  box-shadow: 0 10px 24px var(--accent-soft);
+}
+
+.glow-btn:hover {
+  filter: brightness(1.05);
+}
+
+/* Legacy utility harmonization for existing pages */
+.bg-\[\#161b22\],
+.bg-\[\#0d1117\],
+.bg-white {
+  background-color: var(--panel-solid) !important;
+}
+
+.bg-gray-50 {
+  background-color: color-mix(in srgb, var(--panel-solid) 86%, var(--bg)) !important;
+}
+
+.border-\[\#30363d\],
+.border-\[\#d0d7de\],
+.border-gray-200,
+.border-gray-300,
+.border-gray-600,
+.border-gray-700 {
+  border-color: var(--panel-border) !important;
+}
+
+.text-gray-300,
+.text-gray-400,
+.text-gray-500,
+.text-gray-700 {
+  color: var(--muted) !important;
+}
+
+.bg-blue-600 {
+  background-color: var(--accent) !important;
+}
+
+.hover\:bg-blue-500:hover,
+.hover\:bg-blue-700:hover,
+.hover\:bg-blue-900\/50:hover {
+  background-color: var(--accent) !important;
+  filter: brightness(1.05);
+}
+
+.modern-content h1,
+.modern-content h2 {
+  color: var(--text) !important;
+}
+
+.modern-content input,
+.modern-content select,
+.modern-content textarea {
+  border-radius: 0.75rem !important;
+  border-color: var(--panel-border) !important;
+  background-color: var(--input) !important;
+  color: var(--text) !important;
+}
+
+.modern-content input::placeholder,
+.modern-content textarea::placeholder {
+  color: var(--muted) !important;
+}
+
+.modern-content table {
+  width: 100%;
+}
+
+.modern-content table thead tr {
+  background-color: color-mix(in srgb, var(--panel-solid) 86%, var(--bg)) !important;
+}
+
+.modern-content table th {
+  color: var(--muted) !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.modern-content table tr {
+  border-color: var(--panel-border) !important;
+}
+
+.modern-content table td {
+  color: var(--text);
+}
+
+.modern-content .rounded-md.border,
+.modern-content .border.rounded-md,
+.modern-content .border.rounded-lg,
+.modern-content .rounded-md.border.overflow-hidden {
+  border-radius: 0.9rem !important;
+  border-color: var(--panel-border) !important;
+  background-color: var(--panel-solid) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.modern-content button {
+  border-radius: 0.7rem;
+}
+
+.density-compact .modern-content {
+  font-size: 0.94rem;
+}
+
+.density-compact .modern-content h1 {
+  font-size: 1.55rem !important;
+}
+
+.density-compact .modern-content h2 {
+  font-size: 1.05rem !important;
+}
+
+.density-compact .modern-content .p-6 {
+  padding: 1rem !important;
+}
+
+.density-compact .modern-content .p-4 {
+  padding: 0.75rem !important;
+}
+
+.density-compact .modern-content .px-4 {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+.density-compact .modern-content .py-3 {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.density-compact .modern-content .py-2 {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+}
+
+.density-compact .modern-content input,
+.density-compact .modern-content select,
+.density-compact .modern-content textarea,
+.density-compact .modern-content button {
+  font-size: 0.86rem;
 }

@@ -1,7 +1,13 @@
-import { useEffect } from "react";
 import useUIStore from "../store/useUIStore";
 
-function Modal({ isOpen, onClose, title, children, type = "default", showClose = true }) {
+function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  type = "default",
+  showClose = true,
+}) {
   const darkMode = useUIStore((state) => state.darkMode);
 
   const handleBackdropClick = (e) => {
@@ -12,85 +18,56 @@ function Modal({ isOpen, onClose, title, children, type = "default", showClose =
 
   if (!isOpen) return null;
 
-  const backdropStyle = "fixed inset-0 bg-black/50 flex items-center justify-center z-50";
-  const modalBg = darkMode ? "#161b22" : "#ffffff";
-  const modalBorder = darkMode ? "#30363d" : "#d0d7de";
-  const textColor = darkMode ? "#fff" : "#111827";
-
   const getTypeStyles = () => {
     switch (type) {
       case "success":
-        return {
-          headerBg: darkMode ? "bg-blue-900/30" : "bg-blue-50",
-          headerBorder: darkMode ? "#166534" : "#bbf7d0",
-          iconColor: darkMode ? "#4ade80" : "#16a34a",
-          icon: "✓",
-        };
+        return { icon: "✓", tone: "#22c55e" };
       case "error":
-        return {
-          headerBg: darkMode ? "bg-red-900/30" : "bg-red-50",
-          headerBorder: darkMode ? "#991b1b" : "#fecaca",
-          iconColor: darkMode ? "#f87171" : "#dc2626",
-          icon: "✕",
-        };
+        return { icon: "✕", tone: "var(--status-danger)" };
       case "warning":
-        return {
-          headerBg: darkMode ? "bg-yellow-900/30" : "bg-yellow-50",
-          headerBorder: darkMode ? "#854d0e" : "#fef08a",
-          iconColor: darkMode ? "#fbbf24" : "#ca8a04",
-          icon: "!",
-        };
+        return { icon: "!", tone: "#f59e0b" };
       case "confirm":
-        return {
-          headerBg: darkMode ? "bg-blue-900/30" : "bg-blue-50",
-          headerBorder: darkMode ? "#1e40af" : "#bfdbfe",
-          iconColor: darkMode ? "#60a5fa" : "#2563eb",
-          icon: "?",
-        };
+        return { icon: "?", tone: "var(--accent)" };
       default:
-        return {
-          headerBg: darkMode ? "bg-[#161b22]" : "bg-gray-50",
-          headerBorder: modalBorder,
-          iconColor: textColor,
-          icon: "",
-        };
+        return { icon: "", tone: "var(--text)" };
     }
   };
 
   const typeStyles = getTypeStyles();
 
   return (
-    <div className={backdropStyle} onClick={handleBackdropClick}>
-      <div
-        className={`border rounded-md w-full max-w-md overflow-hidden ${darkMode ? "text-white" : "text-gray-900"}`}
-        style={{ backgroundColor: modalBg, borderColor: modalBorder }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={handleBackdropClick}>
+      <div className="panel w-full max-w-md overflow-hidden rounded-2xl">
         <div
-          className="px-4 py-3 border-b flex items-center justify-between"
-          style={{ backgroundColor: typeStyles.headerBg, borderColor: typeStyles.headerBorder }}
+          className="flex items-center justify-between border-b px-4 py-3"
+          style={{ borderColor: "var(--panel-border)", background: "var(--panel-solid)" }}
         >
           <div className="flex items-center gap-2">
             {type !== "default" && (
               <span
-                className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold"
-                style={{ color: typeStyles.iconColor, borderColor: typeStyles.iconColor, border: "2px solid" }}
+                className="flex h-6 w-6 items-center justify-center rounded-full border text-sm font-bold"
+                style={{ color: typeStyles.tone, borderColor: typeStyles.tone }}
               >
                 {typeStyles.icon}
               </span>
             )}
-            <h2 className="text-lg font-semibold" style={{ color: textColor }}>
+
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
               {title}
             </h2>
           </div>
+
           {showClose && (
             <button
               onClick={onClose}
-              className={`text-lg font-bold ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"}`}
+              className="text-xl font-bold transition hover:opacity-70"
+              style={{ color: darkMode ? "#94a3b8" : "#64748b" }}
             >
               ×
             </button>
           )}
         </div>
+
         <div className="p-4">{children}</div>
       </div>
     </div>

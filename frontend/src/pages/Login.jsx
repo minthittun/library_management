@@ -8,8 +8,9 @@ function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
-  const navigate = useNavigate();
   const darkMode = useUIStore((state) => state.darkMode);
+  const toggleDarkMode = useUIStore((state) => state.toggleDarkMode);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,6 +18,7 @@ function Login() {
     setLoading(true);
     const result = await login(form.username, form.password);
     setLoading(false);
+
     if (result.success) {
       navigate("/");
     } else {
@@ -24,74 +26,71 @@ function Login() {
     }
   };
 
-  const inputStyle = `w-full px-3 py-2 rounded-md border ${
-    darkMode
-      ? "bg-[#0d1117] border-gray-600 text-white placeholder-gray-500"
-      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
-  }`;
-
   return (
-    <div
-      className={`min-h-screen flex items-center justify-center ${darkMode ? "bg-[#010409]" : "bg-[#f6f8fa]"}`}
-    >
-      <div
-        className={`w-full max-w-md p-8 rounded-md border ${darkMode ? "bg-[#161b22] border-gray-700" : "bg-white border-gray-200"}`}
+    <div className="relative flex min-h-screen items-center justify-center p-4">
+      <button
+        onClick={toggleDarkMode}
+        className="absolute right-4 top-4 rounded-xl border px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--accent-soft)]"
+        style={{ borderColor: "var(--panel-border)", color: "var(--text)" }}
       >
-        <div className="text-center mb-6">
-          <h1
-            className={`text-2xl font-semibold mt-4 ${darkMode ? "text-white" : "text-gray-900"}`}
-          >
-            Sign in to Library
-          </h1>
-        </div>
+        {darkMode ? "Light mode" : "Dark mode"}
+      </button>
+
+      <div className="panel w-full max-w-md rounded-2xl p-7 md:p-8">
+        <p className="text-xs uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>
+          Welcome back
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold" style={{ color: "var(--text)" }}>
+          Library Console
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+          Sign in to manage books, memberships, and sales.
+        </p>
 
         {error && (
           <div
-            className={`p-3 rounded-md text-sm mb-4 ${darkMode ? "bg-red-900/50 border border-red-700 text-red-400" : "bg-red-50 border border-red-200 text-red-600"}`}
+            className="mt-5 rounded-xl border px-3 py-2 text-sm"
+            style={{
+              color: "var(--status-danger)",
+              borderColor: "color-mix(in srgb, var(--status-danger) 30%, transparent)",
+              background: "color-mix(in srgb, var(--status-danger) 10%, transparent)",
+            }}
           >
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label
-                className={`block text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}
-              >
-                Username
-              </label>
-              <input
-                type="text"
-                className={inputStyle}
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label
-                className={`block text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                className={inputStyle}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium" style={{ color: "var(--text)" }}>
+              Username
+            </label>
+            <input
+              type="text"
+              className="modern-input w-full rounded-xl px-3 py-2"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              required
+            />
           </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium" style={{ color: "var(--text)" }}>
+              Password
+            </label>
+            <input
+              type="password"
+              className="modern-input w-full rounded-xl px-3 py-2"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className={`w-full mt-6 px-4 py-2 rounded-md text-sm font-medium ${
-              darkMode
-                ? "bg-blue-600 hover:bg-blue-500 text-white"
-                : "bg-blue-600 hover:bg-blue-500 text-white"
-            } disabled:opacity-50`}
+            className="glow-btn mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>

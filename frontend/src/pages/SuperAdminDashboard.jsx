@@ -45,9 +45,7 @@ function SuperAdminDashboard() {
     dashboardAPI.getSuperAdminStats().then((res) => setStats(res.data));
   }, []);
 
-  const cardStyle = darkMode
-    ? "bg-[#161b22] border-[#30363d] text-white"
-    : "bg-white border-[#d0d7de] text-gray-900";
+  const cardStyle = "panel-solid text-[var(--text)]";
 
   const chartColors = {
     primary: darkMode ? "#60a5fa" : "#3b82f6",
@@ -81,7 +79,7 @@ function SuperAdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold" style={{ color: darkMode ? '#ffffff' : '#111827' }}>
+      <h1 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
         Super Admin Dashboard
       </h1>
 

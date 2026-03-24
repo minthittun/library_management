@@ -97,23 +97,18 @@ function Libraries() {
     }
   };
 
-  const cardStyle = darkMode
-    ? "bg-[#161b22] border-[#30363d] text-white"
-    : "bg-white border-[#d0d7de] text-gray-900";
-
-  const inputStyle = darkMode
-    ? "bg-[#0d1117] border-[#30363d] text-white"
-    : "bg-white border-[#d0d7de] text-gray-900";
+  const cardStyle = "panel-solid text-[var(--text)] border-[var(--panel-border)]";
+  const inputStyle = "modern-input";
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold" style={{ color: darkMode ? '#ffffff' : '#111827' }}>
+        <h1 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
           Libraries
         </h1>
         <button
           onClick={openCreateModal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 glow-btn rounded-md transition"
         >
           Add Library
         </button>
@@ -129,7 +124,7 @@ function Libraries() {
         />
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="px-4 py-2 glow-btn rounded-md"
         >
           Search
         </button>
@@ -137,7 +132,7 @@ function Libraries() {
 
       <div className={`border rounded-md overflow-hidden ${cardStyle}`}>
         <table className="w-full">
-          <thead className={darkMode ? "bg-[#0d1117]" : "bg-gray-50"}>
+          <thead>
             <tr>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Name</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Address</th>
@@ -158,7 +153,7 @@ function Libraries() {
               </tr>
             ) : (
               libraries.map((library) => (
-                <tr key={library._id} className={`border-t ${darkMode ? 'border-[#30363d]' : 'border-gray-200'}`}>
+                <tr key={library._id} className="border-t">
                   <td className="py-3 px-4 font-medium">{library.name}</td>
                   <td className="py-3 px-4 text-gray-500">{library.address || "-"}</td>
                   <td className="py-3 px-4 text-gray-500">{library.phone || "-"}</td>
@@ -178,13 +173,13 @@ function Libraries() {
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => openEditModal(library)}
-                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded mr-2"
+                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded mr-2"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(library._id)}
-                      className="px-3 py-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                      className="px-3 py-1 text-red-600 hover:bg-red-50 rounded"
                     >
                       Delete
                     </button>
@@ -266,13 +261,13 @@ function Libraries() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="px-4 py-2 border rounded-md hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-4 py-2 glow-btn rounded-md"
                 >
                   {editingId ? "Update" : "Create"}
                 </button>

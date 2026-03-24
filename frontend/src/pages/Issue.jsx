@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
 import useModalStore from "../store/useModalStore";
-import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
+import SearchableSelect from "../components/SearchableSelect";
 
 function Issue() {
   const {
     members,
-    membersMeta,
-    bookCopies,
-    bookCopiesMeta,
     fetchMembers,
     fetchBookCopies,
     borrowBook,
@@ -18,83 +15,150 @@ function Issue() {
   const darkMode = useUIStore((state) => state.darkMode);
   const showAlert = useModalStore((state) => state.showAlert);
 
-  const [selectedCopy, setSelectedCopy] = useState(null);
-  const [showIssueModal, setShowIssueModal] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const debouncedSearch = useDebounce(search, 500);
-  const [memberSearch, setMemberSearch] = useState("");
-  const [memberPage, setMemberPage] = useState(1);
-  const [memberLimit, setMemberLimit] = useState(10);
-  const debouncedMemberSearch = useDebounce(memberSearch, 300);
+  const [results, setResults] = useState([]);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [cart, setCart] = useState([]);
+  const [issuing, setIssuing] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 350);
+
+  useEffect(() => {
+    fetchMembers({ page: 1, limit: 1000, status: "active" });
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!debouncedSearch) {
+        setResults([]);
+        return;
+      }
+      try {
+        const data = await fetchBookCopies({
+          page: 1,
+          limit: 50,
+          search: debouncedSearch,
+          status: "available",
+          type: "borrow",
+        });
+        setResults(data || []);
+      } catch {
+        setResults([]);
+      }
+    };
+    load();
+  }, [debouncedSearch]);
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const exact = results.find((r) => r.barcode === search.trim());
+      if (exact) {
+        addToCart(exact);
+        setSearch("");
+        setResults([]);
+      }
+    }
+  };
+
   const isExpired = (expiryDate) =>
     expiryDate && new Date(expiryDate) < new Date();
-  const eligibleMembers = members.filter(
-    (member) =>
-      member.status === "active" &&
-      member.membershipExpiryDate &&
-      !isExpired(member.membershipExpiryDate),
+
+  const eligibleMembers = useMemo(
+    () =>
+      (members || []).filter(
+        (member) =>
+          member.status === "active" &&
+          member.membershipExpiryDate &&
+          !isExpired(member.membershipExpiryDate),
+      ),
+    [members],
   );
 
-  useEffect(() => {
-    if (showIssueModal) {
-      fetchMembers({
-        page: memberPage,
-        limit: memberLimit,
-        search: debouncedMemberSearch,
-        status: "active",
-      });
-    }
-  }, [showIssueModal, memberPage, memberLimit, debouncedMemberSearch]);
+  const selectedMember = eligibleMembers.find((m) => m._id === selectedMemberId);
 
-  useEffect(() => {
-    fetchBookCopies({
-      page,
-      limit,
-      search: debouncedSearch,
-      status: "available",
-      type: "borrow",
+  const addToCart = (copy) => {
+    setCart((prev) => {
+      if (prev.some((item) => item._id === copy._id)) {
+        return prev;
+      }
+      return [...prev, copy];
     });
-  }, [page, limit, debouncedSearch]);
+    setSearch("");
+    setResults([]);
+  };
 
-  useEffect(() => {
-    if (bookCopiesMeta.totalPages > 0 && page > bookCopiesMeta.totalPages) {
-      setPage(bookCopiesMeta.totalPages);
-    }
-  }, [bookCopiesMeta.totalPages, page]);
+  const removeFromCart = (copyId) => {
+    setCart((prev) => prev.filter((item) => item._id !== copyId));
+  };
 
-  const handleIssue = async () => {
-    if (!selectedMemberId || !selectedCopy?._id) {
-      showAlert("Selection Required", "Please select a member.", "warning");
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const handleIssueSelected = async () => {
+    if (!selectedMemberId) {
+      showAlert("Member Required", "Please select a member first.", "warning");
       return;
     }
+    if (!cart.length) {
+      showAlert("Cart Empty", "Please add at least one book copy.", "warning");
+      return;
+    }
+
+    setIssuing(true);
+
     try {
-      await borrowBook({
-        memberId: selectedMemberId,
-        bookCopyId: selectedCopy._id,
-      });
-      setShowIssueModal(false);
-      setSelectedCopy(null);
-      setSelectedMemberId("");
-      setMemberSearch("");
-      setMemberPage(1);
-      setPage(1);
-      fetchBookCopies({
-        page: 1,
-        limit,
-        search: debouncedSearch,
-        status: "available",
-        type: "borrow",
-      });
-      showAlert("Success", "Book issued successfully!", "success");
+      const results = await Promise.allSettled(
+        cart.map((copy) =>
+          borrowBook({
+            memberId: selectedMemberId,
+            bookCopyId: copy._id,
+          }),
+        ),
+      );
+
+      const successCount = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected");
+
+      if (successCount > 0) {
+        const successfulIds = results
+          .map((r, idx) => (r.status === "fulfilled" ? cart[idx]._id : null))
+          .filter(Boolean);
+
+        setCart((prev) => prev.filter((copy) => !successfulIds.includes(copy._id)));
+
+        await fetchBookCopies({
+          page: 1,
+          limit: 50,
+          search: debouncedSearch,
+          status: "available",
+          type: "borrow",
+        });
+      }
+
+      if (failed.length === 0) {
+        showAlert("Success", `${successCount} book(s) issued successfully.`, "success");
+      } else {
+        const details = failed
+          .slice(0, 3)
+          .map((f) => f.reason?.response?.data?.message || f.reason?.message || "Unknown error")
+          .join(" | ");
+
+        showAlert(
+          "Partial Success",
+          `${successCount} issued, ${failed.length} failed. ${details}`,
+          failed.length === cart.length ? "error" : "warning",
+        );
+      }
     } catch (error) {
       showAlert(
         "Error",
-        error.response?.data?.message || "Error issuing book",
+        error.response?.data?.message || "Error issuing selected books",
         "error",
       );
+    } finally {
+      setIssuing(false);
     }
   };
 
@@ -112,260 +176,192 @@ function Issue() {
     darkMode
       ? "bg-blue-600 hover:bg-blue-500 text-white"
       : "bg-blue-600 hover:bg-blue-500 text-white"
-  }`;
+  } disabled:opacity-60`;
   const buttonSecondary = `px-3 py-1 rounded-md text-sm font-medium border ${
     darkMode
       ? "border-gray-600 hover:bg-gray-800 text-gray-300"
       : "border-gray-300 hover:bg-gray-100 text-gray-700"
   }`;
-  const buttonSelected = `px-3 py-1 rounded-md text-sm font-medium ${
-    darkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"
-  }`;
-  const buttonGhost = `px-4 py-2 rounded-md text-sm font-medium border ${
+  const buttonDanger = `px-3 py-1 rounded-md text-sm font-medium ${
     darkMode
-      ? "border-gray-600 hover:bg-gray-800 text-gray-300"
-      : "border-gray-300 hover:bg-gray-100 text-gray-700"
+      ? "bg-red-600 hover:bg-red-500 text-white"
+      : "bg-red-600 hover:bg-red-500 text-white"
   }`;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1
-          className="text-2xl font-semibold"
-          style={{ color: darkMode ? "#ffffff" : "#111827" }}
-        >
-          Issue Book
+        <h1 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
+          Issue Book (POS)
         </h1>
       </div>
 
-      <div className="mb-4">
-        <input
-          type="text"
-          className={inputStyle}
-          placeholder="Scan or enter barcode to search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <div className="mb-4">
+            <input
+              type="text"
+              className={inputStyle}
+              placeholder="Scan barcode or search title"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              onKeyDown={handleSearchKeyDown}
+            />
+          </div>
 
-      <div
-        className={`rounded-md border overflow-hidden ${containerStyle}`}
-        style={{ backgroundColor: tableBg, borderColor: tableBorder }}
-      >
-        <table className="w-full table-auto border-collapse">
-          <thead>
-            <tr
-              className={
-                darkMode
-                  ? "bg-[#161b22] text-gray-400"
-                  : "bg-gray-50 text-gray-500"
-              }
-            >
-              <th className={`${thClass} first:rounded-tl-md`}>Barcode</th>
-              <th className={thClass}>Book</th>
-              <th className={thClass}>Type</th>
-              <th className={thClass}>Status</th>
-              <th className={`${thClass} last:rounded-tr-md`}>Action</th>
-            </tr>
-          </thead>
-          <tbody className="text-sm">
-            {bookCopies?.map((copy, index) => (
-              <tr
-                key={copy._id}
-                className={`${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                } border-b`}
-              >
-                <td
-                  className={`${tdClass} ${
-                    index === bookCopies.length - 1 ? "rounded-bl-md" : ""
-                  }`}
-                >
-                  {copy.barcode}
-                </td>
-                <td className={tdClass}>{copy.book?.title || "N/A"}</td>
-                <td className={tdClass}>{copy.type}</td>
-                <td className={tdClass}>{copy.status}</td>
-                <td className={tdClass}>
-                  <button
-                    type="button"
-                    className={buttonSecondary}
-                    onClick={() => {
-                      setSelectedCopy(copy);
-                      setShowIssueModal(true);
-                      setSelectedMemberId("");
-                      setMemberSearch("");
-                      setMemberPage(1);
-                    }}
-                  >
-                    Select
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {bookCopies?.length === 0 && (
-              <tr>
-                <td className={tdClass} colSpan={5}>
-                  No available copies found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <Pagination
-        page={page}
-        totalPages={bookCopiesMeta.totalPages}
-        total={bookCopiesMeta.total}
-        limit={bookCopiesMeta.limit}
-        onPageChange={setPage}
-        onLimitChange={(value) => {
-          setLimit(value);
-          setPage(1);
-        }}
-        darkMode={darkMode}
-      />
-
-      {showIssueModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div
-            className={`border rounded-md p-6 w-full max-w-2xl overflow-hidden ${containerStyle}`}
+            className={`rounded-md border overflow-hidden ${containerStyle}`}
             style={{ backgroundColor: tableBg, borderColor: tableBorder }}
           >
-            <h2
-              className="text-lg font-semibold mb-4"
-              style={{ color: darkMode ? "#ffffff" : "#111827" }}
-            >
-              Select Member
-            </h2>
-            <div className="mb-4">
-              <div className="text-sm text-gray-500 mb-2">
-                Book: {selectedCopy?.book?.title || "N/A"} | Barcode:{" "}
-                {selectedCopy?.barcode || "N/A"}
-              </div>
-              <input
-                type="text"
-                className={inputStyle}
-                placeholder="Search member by name, phone, or address"
-                value={memberSearch}
-                onChange={(e) => {
-                  setMemberSearch(e.target.value);
-                  setMemberPage(1);
-                }}
-              />
-            </div>
-            <div
-              className={`rounded-md border overflow-hidden ${containerStyle}`}
-              style={{ backgroundColor: tableBg, borderColor: tableBorder }}
-            >
-              <table className="w-full table-auto border-collapse">
-                <thead>
-                  <tr
-                    className={
-                      darkMode
-                        ? "bg-[#161b22] text-gray-400"
-                        : "bg-gray-50 text-gray-500"
-                    }
-                  >
-                    <th className={`${thClass} first:rounded-tl-md`}>Name</th>
-                    <th className={thClass}>Phone</th>
-                    <th className={thClass}>Expiry</th>
-                    <th className={`${thClass} last:rounded-tr-md`}>Action</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {eligibleMembers.map((member, index) => (
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr
+                  className={
+                    darkMode ? "bg-[#161b22] text-gray-400" : "bg-gray-50 text-gray-500"
+                  }
+                >
+                  <th className={`${thClass} first:rounded-tl-md`}>Barcode</th>
+                  <th className={thClass}>Book</th>
+                  <th className={thClass}>Status</th>
+                  <th className={`${thClass} last:rounded-tr-md`}>Action</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {(results || []).map((copy, index) => {
+                  const inCart = cart.some((item) => item._id === copy._id);
+                  return (
                     <tr
-                      key={member._id}
-                      className={`${
-                        darkMode ? "border-gray-700" : "border-gray-200"
-                      } border-b`}
+                      key={copy._id}
+                      className={`${darkMode ? "border-gray-700" : "border-gray-200"} border-b`}
                     >
                       <td
                         className={`${tdClass} ${
-                          index === eligibleMembers.length - 1
-                            ? "rounded-bl-md"
-                            : ""
+                          index === results.length - 1 ? "rounded-bl-md" : ""
                         }`}
                       >
-                        {member.name}
+                        {copy.barcode}
                       </td>
-                      <td className={tdClass}>{member.phone}</td>
-                      <td className={tdClass}>
-                        {member.membershipExpiryDate
-                          ? new Date(
-                              member.membershipExpiryDate,
-                            ).toLocaleDateString()
-                          : "-"}
-                      </td>
+                      <td className={tdClass}>{copy.book?.title || "N/A"}</td>
+                      <td className={tdClass}>{copy.status}</td>
                       <td className={tdClass}>
                         <button
                           type="button"
-                          className={
-                            selectedMemberId === member._id
-                              ? buttonSelected
-                              : buttonSecondary
-                          }
-                          onClick={() => setSelectedMemberId(member._id)}
+                          className={inCart ? buttonSecondary : buttonPrimary}
+                          onClick={() => addToCart(copy)}
+                          disabled={inCart}
                         >
-                          {selectedMemberId === member._id
-                            ? "Selected"
-                            : "Select"}
+                          {inCart ? "Added" : "Add"}
                         </button>
                       </td>
                     </tr>
-                  ))}
-                  {eligibleMembers.length === 0 && (
-                    <tr>
-                      <td className={tdClass} colSpan={4}>
-                        No eligible members found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  );
+                })}
+                {results.length === 0 && (
+                  <tr>
+                    <td className={tdClass} colSpan={4}>
+                      {debouncedSearch
+                        ? "No matching available copies found."
+                        : "Scan barcode or search to add items."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div
+            className={`rounded-md border overflow-hidden ${containerStyle}`}
+            style={{ backgroundColor: tableBg, borderColor: tableBorder }}
+          >
+            <div className="p-4 border-b" style={{ borderColor: tableBorder }}>
+              <div className="text-lg font-semibold">Issue Cart ({cart.length})</div>
             </div>
 
-            <Pagination
-              page={memberPage}
-              totalPages={membersMeta.totalPages}
-              total={membersMeta.total}
-              limit={membersMeta.limit}
-              onPageChange={setMemberPage}
-              onLimitChange={(value) => {
-                setMemberLimit(value);
-                setMemberPage(1);
-              }}
-              darkMode={darkMode}
-            />
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Member</label>
+                <SearchableSelect
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  options={eligibleMembers}
+                  placeholder="Select member"
+                  searchPlaceholder="Search member by name or phone"
+                  renderOption={(member) => (
+                    <div className="flex flex-col">
+                      <span className="font-medium">{member.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {member.phone} | Expires {new Date(member.membershipExpiryDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  filterFn={(member, query) => {
+                    const q = query.toLowerCase();
+                    return (
+                      member.name?.toLowerCase().includes(q) ||
+                      member.phone?.toLowerCase().includes(q)
+                    );
+                  }}
+                />
+                {selectedMember && (
+                  <div className="text-xs text-gray-500 mt-2">
+                    Selected: {selectedMember.name}
+                  </div>
+                )}
+              </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowIssueModal(false);
-                  setSelectedCopy(null);
-                  setSelectedMemberId("");
-                }}
-                className={buttonGhost}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleIssue}
-                className={buttonPrimary}
-              >
-                Issue Book
-              </button>
+              <div className="max-h-72 overflow-y-auto space-y-2">
+                {cart.map((item) => (
+                  <div key={item._id} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{item.book?.title || "N/A"}</div>
+                      <div className="text-xs text-gray-500">{item.barcode}</div>
+                    </div>
+                    <button
+                      type="button"
+                      className={buttonDanger}
+                      onClick={() => removeFromCart(item._id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+
+                {cart.length === 0 && (
+                  <div className="text-sm text-gray-500">No copies in cart.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t" style={{ borderColor: tableBorder }}>
+              <div className="text-sm text-gray-500 mb-3">
+                Ready to issue: <span className="font-semibold">{cart.length}</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={buttonSecondary}
+                  onClick={clearCart}
+                  disabled={!cart.length || issuing}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  className={buttonPrimary}
+                  onClick={handleIssueSelected}
+                  disabled={!cart.length || !selectedMemberId || issuing}
+                >
+                  {issuing ? "Issuing..." : "Issue Selected"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

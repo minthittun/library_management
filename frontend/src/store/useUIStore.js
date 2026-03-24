@@ -6,7 +6,12 @@ const useUIStore = create(
     (set) => ({
       sidebarCollapsed: false,
       darkMode: false,
+      density: 'comfortable',
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      toggleDensity: () =>
+        set((state) => ({
+          density: state.density === 'comfortable' ? 'compact' : 'comfortable',
+        })),
       toggleDarkMode: () => set((state) => {
         const newMode = !state.darkMode;
         if (newMode) {

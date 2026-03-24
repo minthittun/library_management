@@ -35,9 +35,7 @@ function Dashboard() {
     dashboardAPI.getStats().then((res) => setStats(res.data));
   }, []);
 
-  const cardStyle = darkMode
-    ? "bg-[#161b22] border-[#30363d] text-white"
-    : "bg-white border-[#d0d7de] text-gray-900";
+  const cardStyle = "panel-solid text-[var(--text)]";
 
   const chartColors = {
     primary: darkMode ? "#60a5fa" : "#3b82f6",
@@ -65,16 +63,13 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold" style={{ color: darkMode ? '#ffffff' : '#111827' }}>
+      <h1 className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
         Dashboard
       </h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
         {cards.map((card) => (
-          <div
-            key={card.title}
-            className={`border rounded-md p-4 ${cardStyle}`}
-          >
+          <div key={card.title} className={`border rounded-md p-4 ${cardStyle}`}>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
               {card.title}
             </p>
