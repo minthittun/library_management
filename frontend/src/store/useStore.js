@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { bookAPI, memberAPI, borrowAPI, saleAPI, paymentAPI } from '../api';
 
+const normalizeMeta = (resData) => {
+  const pagination = resData?.pagination || {};
+  return {
+    page: pagination.page ?? resData?.page ?? 1,
+    limit: pagination.limit ?? resData?.limit ?? 10,
+    total: pagination.total ?? resData?.total ?? 0,
+    totalPages: pagination.totalPages ?? resData?.totalPages ?? 0,
+  };
+};
+
 const useStore = create((set, get) => ({
   books: [],
   bookCopies: [],
@@ -26,12 +36,7 @@ const useStore = create((set, get) => ({
       const res = await bookAPI.getBooks(params);
       set({
         books: res.data.data,
-        booksMeta: {
-          page: res.data.page,
-          limit: res.data.limit,
-          total: res.data.total,
-          totalPages: res.data.totalPages,
-        },
+        booksMeta: normalizeMeta(res.data),
         loading: false,
       });
       return res.data;
@@ -46,12 +51,7 @@ const useStore = create((set, get) => ({
       const res = await bookAPI.getBookCopies(params);
       set({
         bookCopies: res.data.data,
-        bookCopiesMeta: {
-          page: res.data.page,
-          limit: res.data.limit,
-          total: res.data.total,
-          totalPages: res.data.totalPages,
-        },
+        bookCopiesMeta: normalizeMeta(res.data),
         loading: false,
       });
       return res.data.data;
@@ -97,12 +97,7 @@ const useStore = create((set, get) => ({
       const res = await memberAPI.getMembers(params);
       set({
         members: res.data.data,
-        membersMeta: {
-          page: res.data.page,
-          limit: res.data.limit,
-          total: res.data.total,
-          totalPages: res.data.totalPages,
-        },
+        membersMeta: normalizeMeta(res.data),
         loading: false,
       });
       return res.data;
@@ -128,12 +123,7 @@ const useStore = create((set, get) => ({
       const res = await borrowAPI.getBorrowRecords(params);
       set({
         borrowRecords: res.data.data,
-        borrowMeta: {
-          page: res.data.page,
-          limit: res.data.limit,
-          total: res.data.total,
-          totalPages: res.data.totalPages,
-        },
+        borrowMeta: normalizeMeta(res.data),
         loading: false,
       });
       return res.data;
@@ -178,18 +168,23 @@ const useStore = create((set, get) => ({
     }
   },
 
+  returnBooks: async (ids) => {
+    try {
+      const res = await borrowAPI.returnBooks(ids);
+      return res.data;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
   fetchSales: async (params) => {
     set({ loading: true });
     try {
       const res = await saleAPI.getSales(params);
       set({
         sales: res.data.data,
-        salesMeta: {
-          page: res.data.page,
-          limit: res.data.limit,
-          total: res.data.total,
-          totalPages: res.data.totalPages,
-        },
+        salesMeta: normalizeMeta(res.data),
         loading: false,
       });
       return res.data;
@@ -225,12 +220,7 @@ const useStore = create((set, get) => ({
       const res = await paymentAPI.getPayments(params);
       set({
         payments: res.data.data,
-        paymentsMeta: {
-          page: res.data.page,
-          limit: res.data.limit,
-          total: res.data.total,
-          totalPages: res.data.totalPages,
-        },
+        paymentsMeta: normalizeMeta(res.data),
         loading: false,
       });
       return res.data;
@@ -258,10 +248,10 @@ const useStore = create((set, get) => ({
         saleAPI.getSales({ page: 1, limit: 1 })
       ]);
 
-      const totalBooks = booksRes.data.total || 0;
-      const borrowedBooks = borrowedRes.data.total || 0;
-      const soldBooks = salesRes.data.total || 0;
-      const activeMembers = activeMembersRes.data.total || 0;
+      const totalBooks = normalizeMeta(booksRes.data).total;
+      const borrowedBooks = normalizeMeta(borrowedRes.data).total;
+      const soldBooks = normalizeMeta(salesRes.data).total;
+      const activeMembers = normalizeMeta(activeMembersRes.data).total;
 
       return { totalBooks, borrowedBooks, soldBooks, activeMembers };
     } catch (error) {

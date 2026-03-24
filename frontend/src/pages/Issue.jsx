@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
 import useModalStore from "../store/useModalStore";
@@ -20,11 +20,16 @@ function Issue() {
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [cart, setCart] = useState([]);
   const [issuing, setIssuing] = useState(false);
+  const searchInputRef = useRef(null);
 
   const debouncedSearch = useDebounce(search, 350);
 
   useEffect(() => {
     fetchMembers({ page: 1, limit: 1000, status: "active" });
+  }, []);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -127,6 +132,7 @@ function Issue() {
           .filter(Boolean);
 
         setCart((prev) => prev.filter((copy) => !successfulIds.includes(copy._id)));
+        setSelectedMemberId("");
 
         await fetchBookCopies({
           page: 1,
@@ -201,6 +207,7 @@ function Issue() {
           <div className="mb-4">
             <input
               type="text"
+              ref={searchInputRef}
               className={inputStyle}
               placeholder="Scan barcode or search title"
               value={search}

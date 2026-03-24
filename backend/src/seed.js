@@ -156,21 +156,21 @@ const seedAdmins = async (libraries) => {
         password: hashedPassword,
         name: "Central Admin",
         role: "admin",
-        libraries: [libraries[0]._id],
+        library: libraries[0]._id,
       },
       {
         username: "northadmin",
         password: hashedPassword,
         name: "North Branch Admin",
         role: "admin",
-        libraries: [libraries[1]._id],
+        library: libraries[1]._id,
       },
       {
         username: "southadmin",
         password: hashedPassword,
         name: "South Branch Admin",
         role: "admin",
-        libraries: [libraries[2]._id],
+        library: libraries[2]._id,
       },
     ];
     await User.insertMany(adminData);

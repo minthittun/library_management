@@ -159,7 +159,9 @@ function BorrowReport() {
                     {record.status}
                   </span>
                 </td>
-                <td className={tdClass}>{record.issuedBy || "N/A"}</td>
+                <td className={tdClass}>
+                  {record.issuedByName || record.issuedBy?.name || "N/A"}
+                </td>
               </tr>
             ))}
             {borrowRecords?.length === 0 && (

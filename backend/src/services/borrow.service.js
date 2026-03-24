@@ -5,7 +5,7 @@ import Member from '../models/Member.js';
 import { buildPaginatedResponse, normalizePagination } from '../utils/pagination.js';
 import { buildSearchRegex } from '../utils/search.js';
 
-export const borrowBook = async (memberId, bookCopyId, libraryId) => {
+export const borrowBook = async (memberId, bookCopyId, libraryId, issuedBy) => {
   if (!libraryId) throw new Error('Library ID is required');
   
   const member = await Member.findById(memberId);
@@ -41,6 +41,8 @@ export const borrowBook = async (memberId, bookCopyId, libraryId) => {
     member: memberId,
     bookCopy: bookCopyId,
     library: libraryId,
+    issuedBy: issuedBy?.id || null,
+    issuedByName: issuedBy?.name || null,
     borrowDate: new Date(),
     dueDate,
     status: 'borrowed'
@@ -69,6 +71,42 @@ export const returnBook = async (transactionId) => {
   await BookCopy.findByIdAndUpdate(transaction.bookCopy, { status: 'available' });
   
   return transaction;
+};
+
+export const returnBooks = async (transactionIds = [], libraryId = null) => {
+  if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
+    throw new Error('Transaction IDs are required');
+  }
+
+  const match = { _id: { $in: transactionIds } };
+  if (libraryId) match.library = libraryId;
+
+  const transactions = await BorrowTransaction.find(match);
+  const foundIds = new Set(transactions.map((t) => t._id.toString()));
+  const notFoundCount = transactionIds.filter((id) => !foundIds.has(id)).length;
+
+  const toReturn = transactions.filter((t) => t.status !== 'returned');
+  const toReturnIds = toReturn.map((t) => t._id);
+  const bookCopyIds = toReturn.map((t) => t.bookCopy);
+
+  if (toReturnIds.length > 0) {
+    const now = new Date();
+    await BorrowTransaction.updateMany(
+      { _id: { $in: toReturnIds } },
+      { $set: { status: 'returned', returnDate: now } }
+    );
+    await BookCopy.updateMany(
+      { _id: { $in: bookCopyIds } },
+      { $set: { status: 'available' } }
+    );
+  }
+
+  return {
+    requested: transactionIds.length,
+    returned: toReturnIds.length,
+    skipped: transactions.length - toReturnIds.length,
+    notFound: notFoundCount,
+  };
 };
 
 export const getAllBorrowTransactions = async (params = {}) => {
@@ -116,6 +154,7 @@ export const getAllBorrowTransactions = async (params = {}) => {
       $match: {
         $or: [
           { 'member.name': searchRegex },
+          { 'member.phone': searchRegex },
           { 'bookCopy.book.title': searchRegex },
           { 'bookCopy.barcode': searchRegex },
           { status: searchRegex },
@@ -152,7 +191,8 @@ export const getAllBorrowTransactions = async (params = {}) => {
 export const getBorrowTransactionById = async (id) => {
   return await BorrowTransaction.findById(id)
     .populate('member')
-    .populate('bookCopy');
+    .populate('bookCopy')
+    .populate('issuedBy', 'name username');
 };
 
 export const getMemberBorrowHistory = async (memberId) => {
@@ -161,5 +201,6 @@ export const getMemberBorrowHistory = async (memberId) => {
       path: 'bookCopy',
       populate: { path: 'book' }
     })
+    .populate('issuedBy', 'name username')
     .sort({ borrowDate: -1 });
 };

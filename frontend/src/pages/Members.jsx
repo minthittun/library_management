@@ -53,7 +53,7 @@ function Members() {
   };
 
   const openPaymentModal = (memberId) => {
-    setPaymentForm({ memberId, amount: "50", monthsExtended: "6" });
+    setPaymentForm({ memberId, amount: "", monthsExtended: "6" });
     setShowPaymentModal(true);
   };
 

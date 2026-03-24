@@ -25,6 +25,12 @@ function ProtectedRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
+function AdminOnlyRoute({ children }) {
+  const user = useAuthStore((state) => state.user);
+  if (!user) return <Navigate to="/login" />;
+  return user.role === "admin" ? children : <Navigate to="/" />;
+}
+
 function DashboardRouter() {
   const user = useAuthStore((state) => state.user);
   if (user?.role === "superadmin") {
@@ -75,15 +81,78 @@ function App() {
               <Layout>
                 <Routes>
                   <Route path="/" element={<DashboardRouter />} />
-                  <Route path="/books" element={<Books />} />
-                  <Route path="/copies" element={<BookCopies />} />
-                  <Route path="/members" element={<Members />} />
-                  <Route path="/issue" element={<Issue />} />
-                  <Route path="/return" element={<Return />} />
-                  <Route path="/borrow/report" element={<BorrowReport />} />
-                  <Route path="/sales" element={<Sales />} />
-                  <Route path="/sales/report" element={<SalesReport />} />
-                  <Route path="/payments" element={<Payments />} />
+                  <Route
+                    path="/books"
+                    element={
+                      <AdminOnlyRoute>
+                        <Books />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/copies"
+                    element={
+                      <AdminOnlyRoute>
+                        <BookCopies />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/members"
+                    element={
+                      <AdminOnlyRoute>
+                        <Members />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/issue"
+                    element={
+                      <AdminOnlyRoute>
+                        <Issue />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/return"
+                    element={
+                      <AdminOnlyRoute>
+                        <Return />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/borrow/report"
+                    element={
+                      <AdminOnlyRoute>
+                        <BorrowReport />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/sales"
+                    element={
+                      <AdminOnlyRoute>
+                        <Sales />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/sales/report"
+                    element={
+                      <AdminOnlyRoute>
+                        <SalesReport />
+                      </AdminOnlyRoute>
+                    }
+                  />
+                  <Route
+                    path="/payments"
+                    element={
+                      <AdminOnlyRoute>
+                        <Payments />
+                      </AdminOnlyRoute>
+                    }
+                  />
                   <Route path="/admin/libraries" element={<Libraries />} />
                   <Route path="/admin/admins" element={<Admins />} />
                 </Routes>

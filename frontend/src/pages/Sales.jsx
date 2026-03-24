@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useStore from "../store/useStore";
 import useAuthStore from "../store/useAuthStore";
 import useUIStore from "../store/useUIStore";
@@ -18,6 +18,7 @@ function Sales() {
   const [discountPct, setDiscountPct] = useState("0");
   const [taxPct, setTaxPct] = useState("0");
   const [payAmount, setPayAmount] = useState("");
+  const searchInputRef = useRef(null);
 
   const containerStyle = darkMode ? "text-white" : "text-gray-900";
   const tableBg = darkMode ? "#161b22" : "#ffffff";
@@ -71,6 +72,10 @@ function Sales() {
     };
     load();
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   const addToCart = (copy) => {
     setCart((prev) => {
@@ -178,6 +183,7 @@ function Sales() {
               type="text"
               placeholder="Scan barcode or search title"
               className={inputStyle}
+              ref={searchInputRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleSearchKeyDown}

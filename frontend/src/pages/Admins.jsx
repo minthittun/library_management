@@ -14,7 +14,7 @@ function Admins() {
     username: "", 
     password: "", 
     name: "", 
-    libraries: [],
+    libraryId: "",
     isActive: true 
   });
   const [editingId, setEditingId] = useState(null);
@@ -58,17 +58,19 @@ function Admins() {
   };
 
   const openCreateModal = () => {
-    setFormData({ username: "", password: "", name: "", libraries: [], isActive: true });
+    setFormData({ username: "", password: "", name: "", libraryId: "", isActive: true });
     setEditingId(null);
     setShowModal(true);
   };
 
   const openEditModal = (admin) => {
+    const libraryId =
+      typeof admin.library === "object" ? admin.library?._id || "" : admin.library || "";
     setFormData({ 
       username: admin.username, 
       password: "", 
       name: admin.name, 
-      libraries: admin.libraries?.map(l => l._id || l) || [],
+      libraryId,
       isActive: admin.isActive 
     });
     setEditingId(admin._id);
@@ -77,14 +79,18 @@ function Admins() {
 
   const closeModal = () => {
     setShowModal(false);
-    setFormData({ username: "", password: "", name: "", libraries: [], isActive: true });
+    setFormData({ username: "", password: "", name: "", libraryId: "", isActive: true });
     setEditingId(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const data = { ...formData };
+      const data = {
+        ...formData,
+        library: formData.libraryId || null,
+      };
+      delete data.libraryId;
       if (!data.password) delete data.password;
       
       if (editingId) {
@@ -117,15 +123,6 @@ function Admins() {
     } catch (error) {
       alert(error.response?.data?.message || "Error updating admin");
     }
-  };
-
-  const toggleLibrary = (libraryId) => {
-    setFormData(prev => ({
-      ...prev,
-      libraries: prev.libraries.includes(libraryId)
-        ? prev.libraries.filter(id => id !== libraryId)
-        : [...prev.libraries, libraryId]
-    }));
   };
 
   const cardStyle = "panel-solid text-[var(--text)] border-[var(--panel-border)]";
@@ -187,15 +184,19 @@ function Admins() {
                   <td className="py-3 px-4 font-medium">{admin.username}</td>
                   <td className="py-3 px-4">{admin.name}</td>
                   <td className="py-3 px-4">
-                    <div className="flex flex-wrap gap-1">
-                      {(admin.libraries || []).map(lib => (
-                        <span key={lib._id || lib} className={`px-2 py-0.5 rounded text-xs ${
+                    {admin.library ? (
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs ${
                           darkMode ? "bg-gray-700" : "bg-gray-100"
-                        }`}>
-                          {typeof lib === 'object' ? lib.name : lib}
-                        </span>
-                      ))}
-                    </div>
+                        }`}
+                      >
+                        {typeof admin.library === "object"
+                          ? admin.library.name
+                          : admin.library}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 text-sm">-</span>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <button
@@ -271,20 +272,20 @@ function Admins() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Libraries *</label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {libraries.map(lib => (
-                    <label key={lib._id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.libraries.includes(lib._id)}
-                        onChange={() => toggleLibrary(lib._id)}
-                        className="rounded"
-                      />
-                      <span>{lib.name}</span>
-                    </label>
+                <label className="block text-sm font-medium mb-2">Library *</label>
+                <select
+                  required
+                  value={formData.libraryId}
+                  onChange={(e) => setFormData({ ...formData, libraryId: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-md ${inputStyle}`}
+                >
+                  <option value="">Select a library</option>
+                  {libraries.map((lib) => (
+                    <option key={lib._id} value={lib._id}>
+                      {lib.name}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
               <div className="flex gap-2 justify-end">
                 <button

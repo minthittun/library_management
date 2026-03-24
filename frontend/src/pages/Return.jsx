@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useStore from "../store/useStore";
 import useUIStore from "../store/useUIStore";
 import useModalStore from "../store/useModalStore";
@@ -6,7 +6,7 @@ import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
 function Return() {
-  const { borrowRecords, borrowMeta, fetchBorrowRecords, returnBook } =
+  const { borrowRecords, borrowMeta, fetchBorrowRecords, returnBook, returnBooks } =
     useStore();
   const darkMode = useUIStore((state) => state.darkMode);
   const showAlert = useModalStore((state) => state.showAlert);
@@ -15,6 +15,13 @@ function Return() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const debouncedSearch = useDebounce(search, 500);
+  const searchInputRef = useRef(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     fetchBorrowRecords({
@@ -30,6 +37,11 @@ function Return() {
       setPage(borrowMeta.totalPages);
     }
   }, [borrowMeta.totalPages, page]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectedMemberId(null);
+  }, [borrowRecords]);
 
   const handleReturn = async (recordId) => {
     try {
@@ -49,6 +61,84 @@ function Return() {
         "error",
       );
     }
+  };
+
+  const handleBulkReturn = async () => {
+    if (selectedIds.length === 0) {
+      showAlert("No Selection", "Select at least one record to return.", "warning");
+      return;
+    }
+    try {
+      const result = await returnBooks(selectedIds);
+      setSelectedIds([]);
+      setPage(1);
+      fetchBorrowRecords({
+        page: 1,
+        limit,
+        search: debouncedSearch,
+        status: "borrowed",
+      });
+      showAlert(
+        "Success",
+        `Returned ${result.returned} record(s). Skipped ${result.skipped}.`,
+        "success",
+      );
+    } catch (error) {
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Error returning books",
+        "error",
+      );
+    }
+  };
+
+  const allSelected =
+    borrowRecords?.length > 0 &&
+    borrowRecords.every((record) => selectedIds.includes(record._id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds([]);
+      setSelectedMemberId(null);
+    } else {
+      const firstMemberId =
+        borrowRecords?.[0]?.member?._id || borrowRecords?.[0]?.member || null;
+      if (!firstMemberId) {
+        showAlert("No Member", "Selected records must have a member.", "warning");
+        return;
+      }
+      const allowedMemberId = selectedMemberId || firstMemberId;
+      const ids = borrowRecords
+        .filter((record) => {
+          const memberId = record.member?._id || record.member || null;
+          return memberId === allowedMemberId;
+        })
+        .map((record) => record._id);
+      setSelectedIds(ids);
+      setSelectedMemberId(allowedMemberId);
+    }
+  };
+
+  const toggleSelectOne = (recordId) => {
+    const record = borrowRecords.find((item) => item._id === recordId);
+    const memberId = record?.member?._id || record?.member || null;
+    setSelectedIds((prev) => {
+      if (prev.includes(recordId)) {
+        const next = prev.filter((id) => id !== recordId);
+        if (next.length === 0) setSelectedMemberId(null);
+        return next;
+      }
+      if (selectedMemberId && memberId !== selectedMemberId) {
+        showAlert(
+          "Member Mismatch",
+          "You can only return books for one member at a time.",
+          "warning",
+        );
+        return prev;
+      }
+      if (!selectedMemberId) setSelectedMemberId(memberId);
+      return [...prev, recordId];
+    });
   };
 
   const formatDate = (date) =>
@@ -79,11 +169,20 @@ function Return() {
         >
           Return Book
         </h1>
+        <button
+          type="button"
+          className={buttonPrimary}
+          onClick={handleBulkReturn}
+          disabled={selectedIds.length === 0}
+        >
+          Return Selected ({selectedIds.length})
+        </button>
       </div>
 
       <div className="mb-4">
         <input
           type="text"
+          ref={searchInputRef}
           placeholder="Scan barcode or search by member, book, or status"
           className={inputStyle}
           value={search}
@@ -107,7 +206,14 @@ function Return() {
                   : "bg-gray-50 text-gray-500"
               }
             >
-              <th className={`${thClass} first:rounded-tl-md`}>Member</th>
+              <th className={`${thClass} first:rounded-tl-md`}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                />
+              </th>
+              <th className={thClass}>Member</th>
               <th className={thClass}>Book</th>
               <th className={thClass}>Barcode</th>
               <th className={thClass}>Borrow Date</th>
@@ -128,6 +234,13 @@ function Return() {
                     index === borrowRecords.length - 1 ? "rounded-bl-md" : ""
                   }`}
                 >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(record._id)}
+                    onChange={() => toggleSelectOne(record._id)}
+                  />
+                </td>
+                <td className={tdClass}>
                   {record.member?.name || "N/A"}
                 </td>
                 <td className={tdClass}>
@@ -149,7 +262,7 @@ function Return() {
             ))}
             {borrowRecords?.length === 0 && (
               <tr>
-                <td className={tdClass} colSpan={6}>
+                <td className={tdClass} colSpan={7}>
                   No borrowed records found.
                 </td>
               </tr>

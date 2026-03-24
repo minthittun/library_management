@@ -4,6 +4,8 @@ const borrowTransactionSchema = new mongoose.Schema({
   member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member', required: true },
   bookCopy: { type: mongoose.Schema.Types.ObjectId, ref: 'BookCopy', required: true },
   library: { type: mongoose.Schema.Types.ObjectId, ref: 'Library', required: true },
+  issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  issuedByName: { type: String },
   borrowDate: { type: Date, default: Date.now },
   dueDate: { type: Date, required: true },
   returnDate: { type: Date },

@@ -14,14 +14,17 @@ export const authenticateToken = async (req, res, next) => {
     req.user = decoded;
     
     if (decoded.role === 'admin') {
-      const user = await User.findById(decoded.id).populate('libraries');
-      if (user) {
-        req.user.libraries = user.libraries.map(l => l._id.toString());
-        req.user.libraryDetails = user.libraries.map(l => ({ id: l._id.toString(), name: l.name }));
+      const user = await User.findById(decoded.id).populate('library');
+      if (user?.library) {
+        req.user.library = user.library._id.toString();
+        req.user.libraryDetails = { id: user.library._id.toString(), name: user.library.name };
+      } else {
+        req.user.library = null;
+        req.user.libraryDetails = null;
       }
     } else {
-      req.user.libraries = [];
-      req.user.libraryDetails = [];
+      req.user.library = null;
+      req.user.libraryDetails = null;
     }
     
     next();
@@ -36,7 +39,7 @@ export const requireSuperAdmin = async (req, res, next) => {
     if (!user || user.role !== 'superadmin') {
       return res.status(403).json({ message: 'Super Admin access required' });
     }
-    req.user.libraries = [];
+    req.user.library = null;
     next();
   } catch (error) {
     return res.status(403).json({ message: 'Access denied' });
@@ -48,7 +51,7 @@ export const requireAdmin = async (req, res, next) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
-    if (!req.user.libraries || req.user.libraries.length === 0) {
+    if (!req.user.library) {
       return res.status(403).json({ message: 'No library assigned' });
     }
     next();
@@ -68,7 +71,7 @@ export const requireLibraryAccess = (req, res, next) => {
     return next();
   }
   
-  if (!req.user.libraries.includes(libraryId)) {
+  if (req.user.library !== libraryId) {
     return res.status(403).json({ message: 'You do not have access to this library' });
   }
   

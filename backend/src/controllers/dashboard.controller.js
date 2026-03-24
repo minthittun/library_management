@@ -5,7 +5,7 @@ const getLibraryId = (req) => {
   if (req.user.role === 'superadmin') {
     return req.query.library || null;
   }
-  return req.user.libraries?.[0] || null;
+  return req.user.library || null;
 };
 
 export const getDashboardStats = async (req, res, next) => {

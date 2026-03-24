@@ -15,9 +15,9 @@ const useAuthStore = create((set, get) => ({
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       
-      const libraryToSet = user.role === 'superadmin' 
-        ? null 
-        : (user.libraries?.[0]?._id || user.libraries?.[0] || null);
+      const libraryToSet = user.role === 'superadmin'
+        ? null
+        : (user.library?._id || user.library || null);
       
       if (libraryToSet) {
         localStorage.setItem('currentLibrary', libraryToSet);
@@ -56,7 +56,8 @@ const useAuthStore = create((set, get) => ({
   },
   
   getLibraries: () => {
-    return get().user?.libraries || [];
+    const library = get().user?.library;
+    return library ? [library] : [];
   },
 }));
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useUIStore from "../store/useUIStore";
 import { libraryAPI } from "../api";
+import Pagination from "../components/Pagination";
 
 function Libraries() {
   const [libraries, setLibraries] = useState([]);
@@ -192,25 +193,13 @@ function Libraries() {
       </div>
 
       {pagination.totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="px-3 py-1">
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          <button
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page === pagination.totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={handlePageChange}
+        />
       )}
 
       {showModal && (

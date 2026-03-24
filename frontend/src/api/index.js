@@ -70,6 +70,7 @@ export const borrowAPI = {
   getBorrowRecords: (params) => api.get("/borrow", { params }),
   borrowBook: (data) => api.post("/borrow", data),
   returnBook: (id) => api.post(`/return/${id}`),
+  returnBooks: (ids) => api.post("/return/bulk", { ids }),
   getMemberBorrowHistory: (memberId) =>
     api.get(`/member/${memberId}/borrow-history`),
 };
